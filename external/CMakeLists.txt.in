@@ -5,7 +5,7 @@ project(sdsl-download NONE)
 include(ExternalProject)
 ExternalProject_Add(sdsl
   GIT_REPOSITORY    https://github.com/Skadic/sdsl-lite.git
-  GIT_TAG           master
+  GIT_TAG           513f9ebe87ee9d3cfe8dbed5133d639767e1722c
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/sdsl-src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/sdsl-build"
   CONFIGURE_COMMAND ""
