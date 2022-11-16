@@ -12,5 +12,8 @@ include_directories(${sdsl_SOURCE_DIR}/include)
 include_directories(includes)
 add_subdirectory(src)
 
-add_subdirectory(tests)
-add_subdirectory(executables)
+# Add only if standalone
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    add_subdirectory(tests)
+    add_subdirectory(executables)
+endif()
