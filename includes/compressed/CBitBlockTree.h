@@ -1,7 +1,7 @@
 #ifndef BLOCKTREE_PCBLOCKTREE_H
 #define BLOCKTREE_PCBLOCKTREE_H
 
-#include "pointer_based/BlockTree.h"
+#include <pointer_based/BlockTree.h>
 
 #include <sdsl/bit_vectors.hpp>
 #include <sdsl/vectors.hpp>

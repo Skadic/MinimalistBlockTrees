@@ -9,5 +9,4 @@ endforeach()
 
 foreach( exe ${project_EXECUTABLES} )
     target_link_libraries( ${exe} blocktree )
-    target_link_libraries( ${exe} sdsl )
 endforeach()

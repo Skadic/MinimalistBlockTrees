@@ -7,10 +7,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
 
 
 add_subdirectory(external)
-include_directories(${sdsl_SOURCE_DIR}/include)
 
-include_directories(includes)
-add_subdirectory(src)
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+add_library(blocktree STATIC ${SOURCES})
+target_include_directories(blocktree PUBLIC includes)
+target_include_directories(blocktree PRIVATE ${sdsl_SOURCE_DIR}/include)
+target_link_libraries(blocktree INTERFACE sdsl)
 
 # Add only if standalone
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)

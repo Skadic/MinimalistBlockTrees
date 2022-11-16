@@ -1,4 +1,4 @@
-#include "blocktree.utils/HashString.h"
+#include <blocktree.utils/HashString.h>
 
 
 HashString::HashString(size_t hash, std::string& s, int init, int end) : hash_(hash), s_(s), init_(init), end_(end) {
