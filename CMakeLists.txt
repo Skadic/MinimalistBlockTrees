@@ -12,6 +12,7 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_library(blocktree STATIC ${SOURCES})
 target_include_directories(blocktree PUBLIC includes)
 target_include_directories(blocktree PRIVATE ${sdsl_SOURCE_DIR}/include)
+set_target_properties(sdsl PROPERTIES COMPILE_FLAGS "-w")
 target_link_libraries(blocktree INTERFACE sdsl)
 
 # Add only if standalone
