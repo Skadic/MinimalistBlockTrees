@@ -2,17 +2,11 @@
 #include <pointer_based/BlockTree.h>
 #include <compressed/CBlockTree.h>
 
-#include <sstream>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <bitset>
-#include <unordered_set>
-
+#include <filesystem>
 
 int main(int argc, char **argv) {
 
@@ -21,23 +15,32 @@ int main(int argc, char **argv) {
       exit(1);
     }
 
+    if (!std::filesystem::exists(argv[1])) {
+      std::cerr << "File " << argv[1] << " does not exist" << std::endl;
+      exit(1);
+    }
+
+    if (argc < 3) {
+      std::cerr << "Please input tree arity" << std::endl;
+      exit(1);
+    }
+
+    size_t arity = atoi(argv[2]);
+
+    if (argc < 3) {
+      std::cerr << "Please input leaf length" << std::endl;
+      exit(1);
+    }
+
+    size_t leaf_length = atoi(argv[3]);
+
     std::string input;
     std::ifstream t(argv[1]);
     std::stringstream buffer;
     buffer << t.rdbuf();
     input = buffer.str();
 
-    std::unordered_set<int> characters;
-    for (char c: input) {
-        characters.insert(c);
-    }
-
-    BlockTree* bt = new BlockTree(input, 2, 32);
-    bt->process_back_pointers();
-    bt->clean_unnecessary_expansions();
-    for (char c: characters)
-        bt->add_rank_select_support(c);
-
+    BlockTree* bt = new BlockTree(input, arity, leaf_length, true, false);
     auto* cbt = new CBlockTree(bt);
 
     std::stringstream ss;

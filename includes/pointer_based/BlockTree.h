@@ -16,8 +16,9 @@ public:
     int leaf_length_;
     std::string input_; // Input sequence of the Tree
     Block* root_block_;
+    bool rank_select_support_;
 
-    BlockTree(std::string&, int, int);
+    BlockTree(std::string&, int r, int leaf_length, bool clean = false, bool rank_select_support = false);
     ~BlockTree();
 
 

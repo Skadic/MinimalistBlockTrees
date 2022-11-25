@@ -14,6 +14,7 @@ public:
     int r_; // Arity
     int first_level_length_;
     int number_of_levels_;
+    bool rank_select_support_;
 
     std::vector<sdsl::bit_vector*> bt_bv_; // 1 when is Internal Block
     std::vector<sdsl::rank_support_v<1>*> bt_bv_rank_;

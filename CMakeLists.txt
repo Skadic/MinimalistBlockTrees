@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 project(MinimalistBlockTrees)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O9")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fopenmp")
 
 
 add_subdirectory(external)

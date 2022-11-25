@@ -1,7 +1,7 @@
 #include <compressed/CBlockTree.h>
 #include <unordered_set>
 
-CBlockTree::CBlockTree(BlockTree * bt) : r_(bt->r_) {
+CBlockTree::CBlockTree(BlockTree * bt) : r_(bt->r_), rank_select_support_(bt->rank_select_support_) {
     std::vector<Block*> first_level = {bt->root_block_};
     bool is_first_level = false;
     while (!is_first_level) {
@@ -149,6 +149,7 @@ CBlockTree::CBlockTree(std::istream& in) {
     in.read((char *) &r_, sizeof(int));
     in.read((char *) &first_level_length_, sizeof(int));
     in.read((char *) &number_of_levels_, sizeof(int));
+    in.read((char *) &rank_select_support_, sizeof(bool));
 
     for (int i = 0; i < number_of_levels_-1; ++i) {
         bt_bv_.push_back(new sdsl::bit_vector());
@@ -175,25 +176,26 @@ CBlockTree::CBlockTree(std::istream& in) {
         mapping_[character] = c++;
     }
 
-    for (int character : (*alphabet_)) {
-        bt_first_level_prefix_ranks_[character] = new sdsl::int_vector<>();
-        (*bt_first_level_prefix_ranks_[character]).load(in);
-    }
+    if (rank_select_support_) {
+      for (int character : (*alphabet_)) {
+          bt_first_level_prefix_ranks_[character] = new sdsl::int_vector<>();
+          (*bt_first_level_prefix_ranks_[character]).load(in);
+      }
 
-    for (int character : (*alphabet_)) {
-        for (int i = 0; i < number_of_levels_; ++i) {
-            bt_ranks_[character].push_back(new sdsl::int_vector<>());
-            (*bt_ranks_[character][i]).load(in);
-        }
-    }
+      for (int character : (*alphabet_)) {
+          for (int i = 0; i < number_of_levels_; ++i) {
+              bt_ranks_[character].push_back(new sdsl::int_vector<>());
+              (*bt_ranks_[character][i]).load(in);
+          }
+      }
 
-    for (int character : (*alphabet_)) {
-        for (int i = 0; i < number_of_levels_-1; ++i) {
-            bt_second_ranks_[character].push_back(new sdsl::int_vector<>());
-            (*bt_second_ranks_[character][i]).load(in);
-        }
+      for (int character : (*alphabet_)) {
+          for (int i = 0; i < number_of_levels_-1; ++i) {
+              bt_second_ranks_[character].push_back(new sdsl::int_vector<>());
+              (*bt_second_ranks_[character][i]).load(in);
+          }
+      }
     }
-
 }
 
 CBlockTree::~CBlockTree() {
@@ -213,20 +215,22 @@ CBlockTree::~CBlockTree() {
     delete leaf_string_;
     delete alphabet_;
 
-    for (auto pair : bt_first_level_prefix_ranks_) {
-        delete pair.second;
-    }
+    if (rank_select_support_) {
+      for (auto pair : bt_first_level_prefix_ranks_) {
+          delete pair.second;
+      }
 
-    for (auto pair : bt_ranks_) {
-        for (sdsl::int_vector<>* ranks : pair.second) {
-            delete ranks;
-        }
-    }
+      for (auto pair : bt_ranks_) {
+          for (sdsl::int_vector<>* ranks : pair.second) {
+              delete ranks;
+          }
+      }
 
-    for (auto pair : bt_second_ranks_) {
-        for (sdsl::int_vector<> *ranks : pair.second) {
-            delete ranks;
-        }
+      for (auto pair : bt_second_ranks_) {
+          for (sdsl::int_vector<> *ranks : pair.second) {
+              delete ranks;
+          }
+      }
     }
 }
 
@@ -443,6 +447,7 @@ void CBlockTree::serialize(std::ostream& out) {
     out.write((char *) &r_, sizeof(int));
     out.write((char *) &first_level_length_, sizeof(int));
     out.write((char *) &number_of_levels_, sizeof(int));
+    out.write((char *) &rank_select_support_, sizeof(bool));
 
     for (sdsl::bit_vector* bv : bt_bv_) {
         (*bv).serialize(out);
@@ -456,19 +461,21 @@ void CBlockTree::serialize(std::ostream& out) {
 
     (*alphabet_).serialize(out);
 
-    for (int character: (*alphabet_)) {
-        (*bt_first_level_prefix_ranks_[character]).serialize(out);
-    }
+    if (rank_select_support_) {
+      for (int character: (*alphabet_)) {
+          (*bt_first_level_prefix_ranks_[character]).serialize(out);
+      }
 
-    for (int character: (*alphabet_)) {
-        for (sdsl::int_vector<>* ranks: bt_ranks_[character]) {
-            (*ranks).serialize(out);
-        }
-    }
+      for (int character: (*alphabet_)) {
+          for (sdsl::int_vector<>* ranks: bt_ranks_[character]) {
+              (*ranks).serialize(out);
+          }
+      }
 
-    for (int character: (*alphabet_)) {
-        for (sdsl::int_vector<>* second_ranks: bt_second_ranks_[character]) {
-            (*second_ranks).serialize(out);
-        }
+      for (int character: (*alphabet_)) {
+          for (sdsl::int_vector<>* second_ranks: bt_second_ranks_[character]) {
+              (*second_ranks).serialize(out);
+          }
+      }
     }
 }

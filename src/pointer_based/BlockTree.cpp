@@ -4,9 +4,10 @@
 #include <pointer_based/blocks/LeafBlock.h>
 
 #include <stack>
+#include <unordered_set>
 
 
-BlockTree::BlockTree(std::string& input, int r, int leaf_length): r_(r), input_(input), leaf_length_(leaf_length) {
+BlockTree::BlockTree(std::string& input, int r, int leaf_length, bool clean, bool rs_support): r_(r), input_(input), leaf_length_(leaf_length), rank_select_support_(rs_support) {
 
     if (input_.size() <= leaf_length_ || input_.size()<r)
         root_block_ = new LeafBlock(nullptr, 0, input_.size() - 1, input_);
@@ -24,7 +25,22 @@ BlockTree::BlockTree(std::string& input, int r, int leaf_length): r_(r), input_(
 
         root_block_ = new InternalBlock(nullptr, 0, block_length - 1, input_);
     }
+    
+    std::unordered_set<int> characters;
+    if (rank_select_support_) {
+      for (char c: input) {
+          characters.insert(c);
+      }
+    }
 
+    if (clean) {
+      this->process_back_pointers();
+      this->clean_unnecessary_expansions();
+    }
+
+    for (char c: characters) {
+        this->add_rank_select_support(c);
+    }
 }
 
 
