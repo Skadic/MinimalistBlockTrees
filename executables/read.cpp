@@ -24,10 +24,11 @@ int main(int argc, char **argv) {
     ifs.read((char*) &len, sizeof(uint64_t));
     auto* cbt = new CBlockTree(ifs);
 
-    for (size_t i = 0; i < 100; i++) {
-      std::cout << (char) cbt->access(i) << std::endl;
+    std::ofstream ofs(std::string(argv[1]) + ".dec");
+    for (size_t i = 0; i < len; i++) {
+      ofs << (char) cbt->access(i);
     }
-
+    
     delete cbt;
     return 0;
 }

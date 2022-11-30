@@ -2,6 +2,7 @@
 #include <pointer_based/blocks/InternalBlock.h>
 #include <unordered_set>
 #include <fstream>
+#include <filesystem>
 #include "gtest/gtest.h"
 
 #include "pointer_based/BlockTree.h"
@@ -9,30 +10,29 @@
 using ::testing::Combine;
 using ::testing::Values;
 
-typedef BlockTree* CreateBlockTreeFunc(int, int, std::string);
+typedef BlockTree* CreateBlockTreeFunc(int, int, int, std::string);
 
-BlockTree* block_tree(int r, int max_leaf_length, std::string input) {
-
-    BlockTree* block_tree_ = new BlockTree(input, r, max_leaf_length);
+BlockTree* block_tree(int r, int root_arity, int max_leaf_length, std::string input) {
+    BlockTree* block_tree_ = new BlockTree(input, r, root_arity, max_leaf_length);
     block_tree_->process_back_pointers();
     block_tree_->clean_unnecessary_expansions();
     return block_tree_;
 }
 
-BlockTree* block_tree_without_cleanning(int r, int max_leaf_length, std::string input) {
-    BlockTree* block_tree_ = new BlockTree(input, r, max_leaf_length);
+BlockTree* block_tree_without_cleanning(int r, int root_arity, int max_leaf_length, std::string input) {
+    BlockTree* block_tree_ = new BlockTree(input, r, root_arity, max_leaf_length);
     block_tree_->process_back_pointers();
     return block_tree_;
 }
 
-BlockTree* heuristic_block_tree(int r, int max_leaf_length, std::string input) {
-    BlockTree* block_tree_ = new BlockTree(input, r, max_leaf_length);
+BlockTree* heuristic_block_tree(int r, int root_arity, int max_leaf_length, std::string input) {
+    BlockTree* block_tree_ = new BlockTree(input, r, root_arity, max_leaf_length);
     block_tree_->process_back_pointers_heuristic();
     return block_tree_;
 }
 
 
-class BlockTreeBasicPropertiesFixture : public ::testing::TestWithParam<::testing::tuple<int, int, std::string, CreateBlockTreeFunc*>> {
+class BlockTreeBasicPropertiesFixture : public ::testing::TestWithParam<::testing::tuple<int, int, int, std::string, CreateBlockTreeFunc*>> {
 protected:
     virtual void TearDown() {
         delete block_tree_;
@@ -40,18 +40,22 @@ protected:
     }
 
     virtual void SetUp() {
-        CreateBlockTreeFunc* create_blocktree = ::testing::get<3>(GetParam());
+        CreateBlockTreeFunc* create_blocktree = ::testing::get<4>(GetParam());
         r_ = ::testing::get<0>(GetParam());
         leaf_length_ = ::testing::get<1>(GetParam());
+        root_arity_ = ::testing::get<2>(GetParam());
 
-        std::ifstream t(::testing::get<2>(GetParam()));
+        const std::string file_name(std::filesystem::absolute(::testing::get<3>(GetParam())));
+
+        ASSERT_TRUE(std::filesystem::exists(file_name)) << "test file '" << file_name << "' does not exist";
+
+        std::ifstream t(file_name);
         std::stringstream buffer;
         buffer << t.rdbuf();
         input_= buffer.str();
-        block_tree_ = (*create_blocktree)(r_ , leaf_length_, input_);
+        block_tree_ = (*create_blocktree)(r_, root_arity_, leaf_length_, input_);
 
-
-        block_tree_rs_ = (*create_blocktree)(r_ , leaf_length_, input_);
+        block_tree_rs_ = (*create_blocktree)(r_, root_arity_, leaf_length_, input_);
 
         std::unordered_set<int> characters;
         for (char c: input_)
@@ -71,10 +75,11 @@ public:
 
     std::string input_;
     int r_;
+    int root_arity_;
     int leaf_length_;
     std::unordered_map<int,std::vector<int>> characters_; // Characters in the input and its select results
 
-    BlockTreeBasicPropertiesFixture() : ::testing::TestWithParam<::testing::tuple<int, int, std::string, CreateBlockTreeFunc*>>() {
+    BlockTreeBasicPropertiesFixture() : ::testing::TestWithParam<::testing::tuple<int, int, int, std::string, CreateBlockTreeFunc*>>() {
     }
 
     virtual ~BlockTreeBasicPropertiesFixture() {
@@ -85,6 +90,7 @@ INSTANTIATE_TEST_CASE_P(AllVariantsTest,
                         BlockTreeBasicPropertiesFixture,
                         Combine(Values(2),
                                 Values(4),
+                                Values(8),
                                 Values("../../../tests/data/as", "../../../tests/data/dna", "../../../tests/data/dna.par", "../../../tests/data/einstein"),
                                 Values(&block_tree, &block_tree_without_cleanning, &heuristic_block_tree)));
 
@@ -105,14 +111,21 @@ TEST_P(BlockTreeBasicPropertiesFixture, parameters_check) {
 // This test checks if the internal nodes of the PBlockTree
 // have r_ children except the last of each level
 TEST_P(BlockTreeBasicPropertiesFixture, almost_always_r_children_property_check) {
+    bool is_root_level = true;
     for (std::vector<Block*> level : block_tree_->levelwise_iterator()) {
         for (int i = 0; i < level.size()-1; ++i) {
             Block* b =  level[i];
-            if (dynamic_cast<InternalBlock*>(b))
-                EXPECT_EQ(r_, b->children_.size());
+            if (dynamic_cast<InternalBlock*>(b)) {
+                EXPECT_EQ(r_, b->children_.size()) << "expected non-root node to have r = " << r_ << " children";
+            }
         }
-        if (dynamic_cast<InternalBlock*>(level.back()))
-            EXPECT_GE(r_, level.back()->children_.size());
+        if (dynamic_cast<InternalBlock*>(level.back())) {
+            if (is_root_level) {
+                EXPECT_GE(root_arity_, level.back()->children_.size()) << "expected root to have at most root_arity = " << root_arity_ << " children";
+            } else {
+                EXPECT_GE(r_, level.back()->children_.size()) << "expected last non-root node of level to have at most r = " << r_ << " children";;
+            }
+        }
     }
 }
 
@@ -123,9 +136,9 @@ TEST_P(BlockTreeBasicPropertiesFixture, leaf_length_property_check) {
     for (std::vector<Block*> level : block_tree_->levelwise_iterator()) {
         for (Block* b : level) {
             if (dynamic_cast<LeafBlock*>(b))
-                EXPECT_EQ(b->length(), leaf_length_);
+                EXPECT_EQ(b->length(), leaf_length_) << "Incorrect length for leaf block";
             else {
-                EXPECT_GT(b->length(), leaf_length_);
+                EXPECT_GT(b->length(), leaf_length_) << "Incorrect length for non-leaf block";
             }
         }
     }

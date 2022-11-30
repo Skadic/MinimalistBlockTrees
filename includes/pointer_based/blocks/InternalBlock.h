@@ -6,10 +6,10 @@
 class InternalBlock : public Block {
 public:
 
-    InternalBlock(Block*, int64_t, int64_t, std::string&);
+    InternalBlock(Block* parent, int64_t start_index, int64_t end_index, std::string& source);
     ~InternalBlock();
 
-    std::vector<Block*>& children(int, int);
+    std::vector<Block*>& children(int leaf_length, int arity);
     void clean_unnecessary_expansions();
 
     bool is_leaf();

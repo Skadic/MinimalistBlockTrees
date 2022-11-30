@@ -1,5 +1,6 @@
 #include "pointer_based/BlockTree.h"
 
+#include <iostream>
 #include <pointer_based/blocks/InternalBlock.h>
 #include <pointer_based/blocks/LeafBlock.h>
 
@@ -7,17 +8,23 @@
 #include <unordered_set>
 
 
-BlockTree::BlockTree(std::string& input, int r, int leaf_length, bool clean, bool rs_support): r_(r), input_(input), leaf_length_(leaf_length), rank_select_support_(rs_support) {
-
-    if (input_.size() <= leaf_length_ || input_.size()<r)
+BlockTree::BlockTree(std::string& input, int r, int root_block_arity, int leaf_length, bool clean, bool rs_support): 
+  r_(r), root_arity_(root_block_arity), input_(input), leaf_length_(leaf_length), rank_select_support_(rs_support) {
+    // If a leaf is supposed to be greater than the text, or if the arity is greater than the text is long, just make the entire tree one leaf node
+    if (input_.size() <= leaf_length_ || input_.size()<r) {
         root_block_ = new LeafBlock(nullptr, 0, input_.size() - 1, input_);
-    else {
-        int number_of_leaves = (input_.size()%leaf_length_ == 0) ? input_.size()/leaf_length_ : input_.size()/leaf_length_+1;
-        int height =  0;
+    } else {
+        const int number_of_leaves = (input_.size() % leaf_length_ == 0) ? input_.size() / leaf_length_ : input_.size() / leaf_length_ + 1;
+        //The current height of the trea
+        int height = 0;
 
+        // The current max. index of nodes at the current height
+        // So if there are n nodes at the current level, nl is n-1
         int nl = number_of_leaves-1;
         int64_t block_length = leaf_length_;
-        while (nl){
+
+        // In total this calculates 
+        while (nl > 0){
             height++;
             block_length*=r_;
             nl/=r_;
@@ -68,9 +75,12 @@ std::vector<std::vector<Block*>> BlockTree::levelwise_iterator() {
     std::vector<std::vector<Block*>> result = {{root_block_}};
     while (!dynamic_cast<LeafBlock*>(result.back()[0])) {
         std::vector<Block*> next_level = {};
-        for (Block *b : result.back())
-            for (Block *child : b->children(leaf_length_, r_))
+        for (Block *b : result.back()) {
+            const auto block_arity = b == root_block_ ? root_arity_ : r_; 
+            for (Block *child : b->children(leaf_length_, block_arity)) {
                 next_level.push_back(child);
+            }
+        }
         result.push_back(next_level);
     }
 
@@ -94,11 +104,23 @@ int BlockTree::access(int i) {
 }
 
 
+/**
+ * @brief This takes a vector of blocks and returns a vector of their children in order.
+ *
+ * As this method's name says, this is supposed to be used with input vectors 
+ * which consist of blocks of a single level in the tree from left to right.
+ *
+ * @param level A vector of pointers to blocks whose children to return.
+ */
 std::vector<Block*> BlockTree::next_level(std::vector<Block*>& level) {
+
+    // The arity of the current level. If we're at the root, then the arity is of course the root arity.
+    const auto block_arity = (level.size() == 1 && level[0] == root_block_) ? root_arity_ : r_;
+
     std::vector<Block*> next_level;
     for (int i = 0; i < level.size(); ++i) {
         Block* b = level[i];
-        for (Block *child : b->children(leaf_length_, r_)) { // Do it in order
+        for (Block *child : b->children(leaf_length_, block_arity)) { // Do it in order
             child->level_index_ = next_level.size();
             child->first_occurrence_level_index_ = next_level.size();
             next_level.push_back(child);
@@ -172,10 +194,10 @@ void BlockTree::forward_window_block_scan(std::vector<Block*>& level, int window
 }
 
 
-void BlockTree::block_scan(std::vector<Block *>& level, int N , std::unordered_map<HashString, std::vector<Block*>>& hashtable) {
+void BlockTree::block_scan(std::vector<Block *>& level, int N, std::unordered_map<HashString, std::vector<Block*>>& hashtable) {
     for (Block* b : level) {
         RabinKarp rk(input_, b->start_index_, b->length(), N);
-        HashString hS(rk.hash(),  input_, b->start_index_, b->end_index_);
+        HashString hS(rk.hash(), input_, b->start_index_, b->end_index_);
 
         std::unordered_map<HashString, std::vector<Block*>>::const_iterator result = hashtable.find(hS);
 
@@ -188,8 +210,10 @@ void BlockTree::block_scan(std::vector<Block *>& level, int N , std::unordered_m
 
 
 void BlockTree::process_level(std::vector<Block*>& level) {
-
-    int N = 6700417; //Large prime
+  
+    // Large prime
+    const int N = 6700417;
+    // The length of blocks on this level
     int level_length = level.front()->length();
 
     // Block scan
@@ -250,16 +274,28 @@ void BlockTree::process_level(std::vector<Block*>& level) {
 }
 
 
+/**
+ * @brief Actually build the block tree and insert back-links for repeated blocks.
+ */
 void BlockTree::process_back_pointers() {
     std::vector<Block*> current_level = {root_block_};
     std::stack<Block*> none_blocks;
+    // While there is a new level in the tree to process 
     while ((current_level = next_level(current_level)).size() != 0) {
+        //const auto block_arity = current_level[0]->parent_ == root_block_ ? root_block_arity_ : r_; 
+        // If the nodes at this levels are at leaf-size,
+        // we stop, as there are no back-pointers that can exist on this level
         if (current_level[0]->length() < r_ ||  current_level[0]->length() <= leaf_length_) break;
+        // If we have at least 1 block to process on this level and the last node
+        // exceeds the length of the text (thus the block is not "full") we take such blocks out before processing
+        // as they cannot exist anywhere further to the left on this level (all nodes to the left would be full after all)
         while (current_level.size() != 0 && current_level.back()->end_index_ >= input_.size()) {
             none_blocks.push(current_level.back());
             current_level.pop_back();
         }
+        // Process the backlinks on this level
         process_level(current_level);
+        // Put the blocks back that we took out before
         while (!none_blocks.empty()) {
             current_level.push_back(none_blocks.top());
             none_blocks.pop();
@@ -319,4 +355,14 @@ void BlockTree::process_back_pointers_heuristic() {
             none_blocks.pop();
         }
     }
+}
+
+void BlockTree::print() {
+  auto it = levelwise_iterator();
+  for (auto &level : it) {
+    for (Block *b : level) {
+      std::cout << "[" << b->start_index_ << ", " << b->end_index_ << "], ";
+    }
+    std::cout << std::endl;
+  }
 }

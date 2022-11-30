@@ -12,6 +12,7 @@
 class CBlockTree {
 public:
     int r_; // Arity
+    int root_arity_;
     int first_level_length_;
     int number_of_levels_;
     bool rank_select_support_;

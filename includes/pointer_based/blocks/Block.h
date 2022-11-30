@@ -7,11 +7,25 @@
 
 class Block {
 public:
-
+    /**
+     * @parent_ The parent block
+     */
     Block* parent_;
-    int64_t start_index_;
-    int64_t end_index_; // In input string represented by the whole BlockTree
 
+    /**
+     * @start_index_ The index in the input text at which this block starts
+     */
+    int64_t start_index_;
+
+
+    /**
+     * @end_index_ The index in the input text at which this block starts
+     */
+    int64_t end_index_;
+
+    /**
+     * @source_ The string this block tree is built from
+     */
     std::string& source_;
 
     std::unordered_map<int,int> ranks_;
@@ -28,19 +42,19 @@ public:
 
     std::vector<Block*> children_;
 
-    Block(Block*, int64_t, int64_t, std::string&);
+    Block(Block* parent, int64_t start_index, int64_t end_index, std::string &source);
     virtual ~Block();
 
     int64_t length();
     std::string represented_string();
 
-    virtual int add_rank_select_support(int);
+    virtual int add_rank_select_support(int character);
 
     virtual int access(int);
-    virtual int rank(int, int);
+    virtual int rank(int character, int i);
     virtual int select(int, int);
 
-    virtual std::vector<Block*>& children(int, int);
+    virtual std::vector<Block*>& children(int leaf_length, int arity);
     virtual void clean_unnecessary_expansions();
     void replace_child(Block*, Block*);
 

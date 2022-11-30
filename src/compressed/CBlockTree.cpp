@@ -1,7 +1,7 @@
 #include <compressed/CBlockTree.h>
 #include <unordered_set>
 
-CBlockTree::CBlockTree(BlockTree * bt) : r_(bt->r_), rank_select_support_(bt->rank_select_support_) {
+CBlockTree::CBlockTree(BlockTree * bt) : r_(bt->r_), root_arity_(bt->root_arity_), rank_select_support_(bt->rank_select_support_) {
     std::vector<Block*> first_level = {bt->root_block_};
     bool is_first_level = false;
     while (!is_first_level) {
@@ -147,6 +147,7 @@ CBlockTree::CBlockTree(BlockTree * bt) : r_(bt->r_), rank_select_support_(bt->ra
 
 CBlockTree::CBlockTree(std::istream& in) {
     in.read((char *) &r_, sizeof(int));
+    in.read((char *) &root_arity_, sizeof(int));
     in.read((char *) &first_level_length_, sizeof(int));
     in.read((char *) &number_of_levels_, sizeof(int));
     in.read((char *) &rank_select_support_, sizeof(bool));
@@ -445,6 +446,7 @@ int CBlockTree::size() {
 void CBlockTree::serialize(std::ostream& out) {
 
     out.write((char *) &r_, sizeof(int));
+    out.write((char *) &root_arity_, sizeof(int));
     out.write((char *) &first_level_length_, sizeof(int));
     out.write((char *) &number_of_levels_, sizeof(int));
     out.write((char *) &rank_select_support_, sizeof(bool));

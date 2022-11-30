@@ -8,31 +8,31 @@
 using ::testing::Combine;
 using ::testing::Values;
 
-typedef BlockTree* CreateBlockTreeFunc(int, int, std::string);
+typedef BlockTree* CreateBlockTreeFunc(int, int, int, std::string);
 
-BlockTree* block_tree(int r, int max_leaf_length, std::string input) {
+BlockTree* block_tree(int r, int root_arity, int max_leaf_length, std::string input) {
 
-    BlockTree* block_tree_ = new BlockTree(input, r, max_leaf_length);
+    BlockTree* block_tree_ = new BlockTree(input, r, root_arity, max_leaf_length);
     block_tree_->process_back_pointers();
     block_tree_->clean_unnecessary_expansions();
     return block_tree_;
 }
 
-BlockTree* block_tree_without_cleanning(int r, int max_leaf_length, std::string input) {
-    BlockTree* block_tree_ = new BlockTree(input, r, max_leaf_length);
+BlockTree* block_tree_without_cleanning(int r, int root_arity, int max_leaf_length, std::string input) {
+    BlockTree* block_tree_ = new BlockTree(input, r, root_arity, max_leaf_length);
     block_tree_->process_back_pointers();
     return block_tree_;
 }
 
 
-BlockTree* heuristic_block_tree(int r, int max_leaf_length, std::string input) {
-    BlockTree* block_tree_ = new BlockTree(input, r, max_leaf_length);
+BlockTree* heuristic_block_tree(int r, int root_arity, int max_leaf_length, std::string input) {
+    BlockTree* block_tree_ = new BlockTree(input, r, root_arity, max_leaf_length);
     block_tree_->process_back_pointers_heuristic();
     return block_tree_;
 }
 
 
-class CBlockTreeFixture : public ::testing::TestWithParam<::testing::tuple<int, int, std::string, CreateBlockTreeFunc*>> {
+class CBlockTreeFixture : public ::testing::TestWithParam<::testing::tuple<int, int, int, std::string, CreateBlockTreeFunc*>> {
 protected:
     virtual void TearDown() {
         delete block_tree_;
@@ -42,18 +42,19 @@ protected:
     }
 
     virtual void SetUp() {
-        CreateBlockTreeFunc* create_blocktree = ::testing::get<3>(GetParam());
+        CreateBlockTreeFunc* create_blocktree = ::testing::get<4>(GetParam());
         r_ = ::testing::get<0>(GetParam());
         max_leaf_length_ = ::testing::get<1>(GetParam());
+        root_arity_ = ::testing::get<2>(GetParam());
 
-        std::ifstream t(::testing::get<2>(GetParam()));
+        std::ifstream t(::testing::get<3>(GetParam()));
         std::stringstream buffer;
         buffer << t.rdbuf();
         input_= buffer.str();
-        block_tree_ = (*create_blocktree)(r_ , max_leaf_length_, input_);
+        block_tree_ = (*create_blocktree)(r_, root_arity_, max_leaf_length_, input_);
         c_block_tree_ = new CBlockTree(block_tree_);
 
-        block_tree_rs_ = (*create_blocktree)(r_ , max_leaf_length_, input_);
+        block_tree_rs_ = (*create_blocktree)(r_, root_arity_, max_leaf_length_, input_);
 
         std::unordered_set<int> characters;
         for (char c: input_)
@@ -78,10 +79,11 @@ public:
 
     std::string input_;
     int r_;
+    int root_arity_;
     int max_leaf_length_;
     std::unordered_map<int,std::vector<int>> characters_; // Characters in the input and its select results
 
-    CBlockTreeFixture() : ::testing::TestWithParam<::testing::tuple<int, int, std::string, CreateBlockTreeFunc*>>() {
+    CBlockTreeFixture() : ::testing::TestWithParam<::testing::tuple<int, int, int, std::string, CreateBlockTreeFunc*>>() {
     }
 
     virtual ~CBlockTreeFixture() {
@@ -92,6 +94,7 @@ INSTANTIATE_TEST_CASE_P(PCBlockTreeTest,
                         CBlockTreeFixture,
                         Combine(Values(2),
                                 Values(4),
+                                Values(8),
                                 Values("../../../tests/data/as", "../../../tests/data/dna", "../../../tests/data/dna.par", "../../../tests/data/einstein"),
                                 Values(&block_tree, &block_tree_without_cleanning, &heuristic_block_tree)));
 
@@ -99,7 +102,8 @@ INSTANTIATE_TEST_CASE_P(PCBlockTreeTest,
 // This test checks if the fields and
 // number_of_levels_ are correct
 TEST_P(CBlockTreeFixture, general_fields_check) {
-    EXPECT_EQ(c_block_tree_->r_, r_);
+    EXPECT_EQ(c_block_tree_->r_, r_) << "Incorrect tree arity";
+    EXPECT_EQ(c_block_tree_->root_arity_, root_arity_) << "Incorrect root arity";
     auto iterator = block_tree_->levelwise_iterator();
     std::vector<Block*> level;
     bool contains_back_block = false;
@@ -111,7 +115,7 @@ TEST_P(CBlockTreeFixture, general_fields_check) {
         }
         if (contains_back_block) break;
     }
-    EXPECT_EQ(iterator.size()-i, c_block_tree_->number_of_levels_);
+    EXPECT_EQ(iterator.size()-i, c_block_tree_->number_of_levels_) << "Incorrect number of levels";
 
 }
 

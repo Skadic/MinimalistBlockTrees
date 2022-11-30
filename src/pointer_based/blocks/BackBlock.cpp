@@ -2,15 +2,18 @@
 
 
 BackBlock::BackBlock(Block* parent, int64_t start_index, int64_t end_index, std::string& source, Block* first_block,
-                     Block* second_block, int offset) :
+                              Block* second_block, int offset) :
         Block(parent, start_index, end_index, source) {
     first_block_ = first_block;
     if (second_block != nullptr)
-        if (second_block->start_index_ == start_index && second_block->end_index_ == end_index) second_block_ = this;
-        else second_block_ = second_block;
+        if (second_block->start_index_ == start_index && second_block->end_index_ == end_index)  {
+          second_block_ = this;
+        } else {
+          second_block_ = second_block;
+        }
     offset_ = offset;
-    if (first_block_ != nullptr) first_block_->pointing_to_me_ = first_block_->pointing_to_me_ + 1;
-    if (second_block_ != nullptr) second_block_->pointing_to_me_ = second_block_->pointing_to_me_ + 1;
+    if (first_block_ != nullptr) first_block_->pointing_to_me_++;
+    if (second_block_ != nullptr) second_block_->pointing_to_me_++;
 }
 
 BackBlock::~BackBlock() {

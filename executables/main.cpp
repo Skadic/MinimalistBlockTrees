@@ -20,7 +20,7 @@ int main() {
         characters.insert(c);
     }
 
-    BlockTree* bt = new BlockTree(input, 2, 32);
+    BlockTree* bt = new BlockTree(input, 2, 8, 32);
     bt->process_back_pointers();
     bt->clean_unnecessary_expansions();
     for (char c: characters)

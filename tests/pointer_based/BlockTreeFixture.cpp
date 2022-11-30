@@ -9,7 +9,7 @@
 using ::testing::Combine;
 using ::testing::Values;
 
-class BlockTreeFixture : public ::testing::TestWithParam<::testing::tuple<int, int, std::string>> {
+class BlockTreeFixture : public ::testing::TestWithParam<::testing::tuple<int, int, int, std::string>> {
 protected:
     virtual void TearDown() {
     }
@@ -22,17 +22,18 @@ protected:
 
     std::string input_;
     int r_;
+    int root_arity_;
     int max_leaf_length_;
 
-    BlockTreeFixture() : ::testing::TestWithParam<::testing::tuple<int, int, std::string>>() {
+    BlockTreeFixture() : ::testing::TestWithParam<::testing::tuple<int, int, int, std::string>>() {
         r_ = ::testing::get<0>(GetParam());
         max_leaf_length_ = ::testing::get<1>(GetParam());
-
-        std::ifstream t(::testing::get<2>(GetParam()));
+        root_arity_ = ::testing::get<2>(GetParam());
+        std::ifstream t(::testing::get<3>(GetParam()));
         std::stringstream buffer;
         buffer << t.rdbuf();
         input_= buffer.str();
-        block_tree_ = new BlockTree(input_, r_ , max_leaf_length_);
+        block_tree_ = new BlockTree(input_, r_, root_arity_, max_leaf_length_);
         block_tree_->process_back_pointers();
         block_tree_->clean_unnecessary_expansions();
     }
@@ -46,6 +47,7 @@ INSTANTIATE_TEST_CASE_P(BlockTreeConstruction,
                         BlockTreeFixture,
                         Combine(Values(2),
                                 Values(4),
+                                Values(8),
                                 Values("../../../tests/data/as", "../../../tests/data/dna", "../../../tests/data/dna.par", "../../../tests/data/einstein")));
 
 

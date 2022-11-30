@@ -13,12 +13,13 @@ class BlockTree {
     void block_scan(std::vector<Block*>&, int, std::unordered_map<HashString, std::vector<Block*>>&);
 public:
     int r_; // Arity
+    int root_arity_;
     int leaf_length_;
     std::string input_; // Input sequence of the Tree
     Block* root_block_;
     bool rank_select_support_;
 
-    BlockTree(std::string&, int r, int leaf_length, bool clean = false, bool rank_select_support = false);
+    BlockTree(std::string& source, int r, int root_block_arity, int leaf_length, bool clean = false, bool rank_select_support = false);
     ~BlockTree();
 
 
@@ -47,6 +48,9 @@ public:
     //         for (Block* b : level) {
     //             ...
     std::vector<std::vector<Block*>> levelwise_iterator();
+
+
+    void print();
 };
 
 #endif //BLOCKTREE_PBLOCKTREE_H

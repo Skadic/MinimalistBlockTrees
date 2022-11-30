@@ -1,4 +1,9 @@
 .idea
+.cache
+.vscode
+compile_commands.json
+old_bt
+*.bt*
 cmake-build-debug
 build
 

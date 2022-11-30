@@ -21,18 +21,31 @@ int main(int argc, char **argv) {
     }
 
     if (argc < 3) {
-      std::cerr << "Please input tree arity" << std::endl;
+      std::cerr << "Please input tree arity (tau)" << std::endl;
       exit(1);
     }
 
     size_t arity = atoi(argv[2]);
 
-    if (argc < 3) {
-      std::cerr << "Please input leaf length" << std::endl;
+    if (argc < 4) {
+      std::cerr << "Please input root arity (s)" << std::endl;
       exit(1);
     }
 
-    size_t leaf_length = atoi(argv[3]);
+    size_t root_arity = atoi(argv[3]);
+
+    if (argc < 5) {
+      std::cerr << "Please input max leaf length" << std::endl;
+      exit(1);
+    }
+
+    size_t leaf_length = atoi(argv[4]);
+
+    std::cout << "building block tree with parameters:" << 
+      "\narity: " << arity << 
+      "\nroot arity: " << root_arity << 
+      "\nmax leaf length: " << leaf_length << 
+      "\nsaving to " << argv[1] << ".bt" << std::endl;
 
     std::string input;
     std::ifstream t(argv[1]);
@@ -40,7 +53,7 @@ int main(int argc, char **argv) {
     buffer << t.rdbuf();
     input = buffer.str();
 
-    BlockTree* bt = new BlockTree(input, arity, leaf_length, true, false);
+    BlockTree* bt = new BlockTree(input, arity, root_arity, leaf_length, true, false);
     auto* cbt = new CBlockTree(bt);
 
     std::stringstream ss;

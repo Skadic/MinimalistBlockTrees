@@ -6,14 +6,15 @@
 class BackBlock : public Block {
 public:
 
-    BackBlock(Block*, int64_t, int64_t, std::string&, Block*, Block*, int);
+    BackBlock(Block* parent, int64_t start_index, int64_t end_index, std::string& source, Block* first_block,
+                     Block* second_block, int offset);
     ~BackBlock();
 
-    int access(int);
-    int add_rank_select_support(int);
+    int access(int i);
+    int add_rank_select_support(int character);
 
-    int rank(int, int);
-    int select(int, int);
+    int rank(int character, int i);
+    int select(int character, int i);
 };
 
 #endif //BLOCKTREE_PBACKBLOCK_H

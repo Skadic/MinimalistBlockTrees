@@ -14,3 +14,9 @@ foreach( exe ${test_NAMES} )
     target_link_libraries( check_${exe} gtest gtest_main)
     target_link_libraries( check_${exe} blocktree )
 endforeach()
+
+include(GoogleTest)
+
+foreach( exe ${test_NAMES} )
+    gtest_discover_tests(check_${exe} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+endforeach()
