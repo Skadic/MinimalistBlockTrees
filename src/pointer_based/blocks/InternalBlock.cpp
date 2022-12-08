@@ -51,7 +51,7 @@ int InternalBlock::select(int c, int j) {
 std::vector<Block*>& InternalBlock::children(int leaf_length, int r) {
     if (children_.size() == 0) {
         int next_length = length()/r;
-        if (next_length <= leaf_length) {
+        if (next_length <= leaf_length || next_length <= r) {
             for (int i = 0; i < r; ++i) {
                 int init = start_index_ + i * next_length;
                 int end = start_index_ + (i + 1) * next_length - 1;
