@@ -1,7 +1,7 @@
 set(project_EXECUTABLES
         main
-        build
-        read)
+        build_bt
+        read_bt)
 
 
 foreach( exe ${project_EXECUTABLES} )
