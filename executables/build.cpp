@@ -41,11 +41,15 @@ int main(int argc, char **argv) {
 
     size_t leaf_length = atoi(argv[4]);
 
+    std::stringstream ss;
+    ss << argv[1] << "_arit" << arity << "_root" << root_arity << "_leaf" << leaf_length << ".bt";
+    std::string out_path = ss.str();
+
     std::cout << "building block tree with parameters:" << 
       "\narity: " << arity << 
       "\nroot arity: " << root_arity << 
       "\nmax leaf length: " << leaf_length << 
-      "\nsaving to " << argv[1] << ".bt" << std::endl;
+      "\nsaving to " << out_path << std::endl;
 
     std::string input;
     std::ifstream t(argv[1]);
@@ -55,11 +59,6 @@ int main(int argc, char **argv) {
 
     BlockTree* bt = new BlockTree(input, arity, root_arity, leaf_length, true, false);
     auto* cbt = new CBlockTree(bt);
-
-    std::stringstream ss;
-    ss << argv[1];
-    ss << ".bt";
-    std::string out_path = ss.str();
 
     uint64_t n = input.length();
 
