@@ -97,7 +97,7 @@ INSTANTIATE_TEST_CASE_P(AllVariantsTest,
 // This test checks if the parameters given to the tree
 // are the same inside the components of the BlockTree
 TEST_P(BlockTreeBasicPropertiesFixture, parameters_check) {
-    EXPECT_EQ(block_tree_->r_, r_);
+    EXPECT_EQ(block_tree_->arity_, r_);
     EXPECT_EQ(block_tree_->input_, input_);
     EXPECT_EQ(block_tree_->leaf_length_, leaf_length_);
     std::vector< std::vector<Block*> > levels = block_tree_->levelwise_iterator();

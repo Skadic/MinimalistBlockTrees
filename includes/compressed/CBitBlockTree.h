@@ -11,7 +11,7 @@
 
 class CBitBlockTree {
 public:
-    int r_; // Arity
+    int arity_; // Arity
     int first_level_length_;
     int number_of_levels_;
 
@@ -27,19 +27,19 @@ public:
     std::vector<sdsl::int_vector<>*> bt_second_ranks_;
 
 
-    CBitBlockTree(BlockTree*, int);
-    CBitBlockTree(std::istream&);
+    CBitBlockTree(BlockTree* source_tree, int one_symbol);
+    CBitBlockTree(std::istream& input);
     virtual ~CBitBlockTree();
 
-    int access(int);
-    int rank_0(int);
-    int rank_1(int);
-    int select_0(int);
-    int select_1(int);
+    int access(int i);
+    int rank_0(int i);
+    int rank_1(int i);
+    int select_0(int rank);
+    int select_1(int rank);
 
     int size();
     int get_partial_size();
-    void serialize(std::ostream&);
+    void serialize(std::ostream& output);
 };
 
 

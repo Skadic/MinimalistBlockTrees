@@ -109,7 +109,7 @@ INSTANTIATE_TEST_CASE_P(PCBitBlockTreeTest,
 // This test checks if the fields and
 // number_of_levels_ are correct
 TEST_P(CBitBlockTreeFixture, general_fields_check) {
-    EXPECT_EQ(c_bit_block_tree_->r_, r_);
+    EXPECT_EQ(c_bit_block_tree_->arity_, r_);
     auto iterator = block_tree_->levelwise_iterator();
     std::vector<Block*> level;
     bool contains_back_block = false;

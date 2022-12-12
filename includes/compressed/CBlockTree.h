@@ -11,7 +11,7 @@
 
 class CBlockTree {
 public:
-    int r_; // Arity
+    int arity_; // Arity
     int root_arity_;
     int first_level_length_;
     int number_of_levels_;
@@ -33,17 +33,17 @@ public:
     std::unordered_map<int,std::vector<sdsl::int_vector<>*>> bt_second_ranks_;
 
 
-    CBlockTree(BlockTree*);
-    CBlockTree(std::istream&);
+    CBlockTree(BlockTree* source_tree);
+    CBlockTree(std::istream& input);
     virtual ~CBlockTree();
 
-    int access(int);
-    int rank(int, int);
-    int select(int, int);
+    int access(int i);
+    int rank(int character, int i);
+    int select(int character, int rank);
 
     int size();
     int get_partial_size();
-    void serialize(std::ostream&);
+    void serialize(std::ostream& character);
 };
 
 

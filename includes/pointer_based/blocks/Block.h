@@ -50,13 +50,13 @@ public:
 
     virtual int add_rank_select_support(int character);
 
-    virtual int access(int);
+    virtual int access(int i);
     virtual int rank(int character, int i);
-    virtual int select(int, int);
+    virtual int select(int character, int rank);
 
     virtual std::vector<Block*>& children(int leaf_length, int arity);
     virtual void clean_unnecessary_expansions();
-    void replace_child(Block*, Block*);
+    void replace_child(Block* old_child, Block* new_child);
 
     virtual bool is_leaf();
 };

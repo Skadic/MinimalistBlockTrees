@@ -12,7 +12,7 @@
 class BlockTree {
     void block_scan(std::vector<Block*>&, int, std::unordered_map<HashString, std::vector<Block*>>&);
 public:
-    int r_; // Arity
+    int arity_; // Arity
     int root_arity_;
     int leaf_length_;
     std::string input_; // Input sequence of the Tree

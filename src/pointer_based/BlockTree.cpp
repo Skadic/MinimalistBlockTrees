@@ -9,7 +9,7 @@
 
 
 BlockTree::BlockTree(std::string& input, int r, int root_block_arity, int leaf_length, bool clean, bool rs_support): 
-  r_(r), root_arity_(root_block_arity), input_(input), leaf_length_(leaf_length), rank_select_support_(rs_support) {
+  arity_(r), root_arity_(root_block_arity), input_(input), leaf_length_(leaf_length), rank_select_support_(rs_support) {
     // If a leaf is supposed to be greater than the text, or if the arity is greater than the text is long, just make the entire tree one leaf node
     if (input_.size() <= leaf_length_ || input_.size()<r) {
         root_block_ = new LeafBlock(nullptr, 0, input_.size() - 1, input_);
@@ -23,11 +23,11 @@ BlockTree::BlockTree(std::string& input, int r, int root_block_arity, int leaf_l
         int nl = number_of_leaves-1;
         int64_t block_length = leaf_length_;
 
-        // In total this calculates 
+        // In total this calculates the block length of the first level of blocks
         while (nl > 0){
             height++;
-            block_length*=r_;
-            nl/=r_;
+            block_length*=arity_;
+            nl/=arity_;
         }
 
         root_block_ = new InternalBlock(nullptr, 0, block_length - 1, input_);
@@ -76,7 +76,7 @@ std::vector<std::vector<Block*>> BlockTree::levelwise_iterator() {
     while (!dynamic_cast<LeafBlock*>(result.back()[0])) {
         std::vector<Block*> next_level = {};
         for (Block *b : result.back()) {
-            const auto block_arity = b == root_block_ ? root_arity_ : r_; 
+            const auto block_arity = b == root_block_ ? root_arity_ : arity_; 
             for (Block *child : b->children(leaf_length_, block_arity)) {
                 next_level.push_back(child);
             }
@@ -115,7 +115,7 @@ int BlockTree::access(int i) {
 std::vector<Block*> BlockTree::next_level(std::vector<Block*>& level) {
 
     // The arity of the current level. If we're at the root, then the arity is of course the root arity.
-    const auto block_arity = (level.size() == 1 && level[0] == root_block_) ? root_arity_ : r_;
+    const auto block_arity = (level.size() == 1 && level[0] == root_block_) ? root_arity_ : arity_;
 
     std::vector<Block*> next_level;
     for (int i = 0; i < level.size(); ++i) {
@@ -285,7 +285,7 @@ void BlockTree::process_back_pointers() {
         //const auto block_arity = current_level[0]->parent_ == root_block_ ? root_block_arity_ : r_; 
         // If the nodes at this levels are at leaf-size,
         // we stop, as there are no back-pointers that can exist on this level
-        if (current_level[0]->length() < r_ ||  current_level[0]->length() <= leaf_length_) break;
+        if (current_level[0]->length() < arity_ ||  current_level[0]->length() <= leaf_length_) break;
         // If we have at least 1 block to process on this level and the last node
         // exceeds the length of the text (thus the block is not "full") we take such blocks out before processing
         // as they cannot exist anywhere further to the left on this level (all nodes to the left would be full after all)
@@ -342,7 +342,7 @@ void BlockTree::process_back_pointers_heuristic() {
     std::vector<Block *> current_level = {root_block_};
     std::stack<Block*> none_blocks;
     while ((current_level = next_level(current_level)).size() != 0) {
-        if (current_level[0]->length() < r_ ||
+        if (current_level[0]->length() < arity_ ||
             current_level[0]->length() <= leaf_length_)
             break;
         while (current_level.size() != 0 && current_level.back()->end_index_ >= input_.size()) {

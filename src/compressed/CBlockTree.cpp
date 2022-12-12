@@ -1,7 +1,7 @@
 #include <compressed/CBlockTree.h>
 #include <unordered_set>
 
-CBlockTree::CBlockTree(BlockTree * bt) : r_(bt->r_), root_arity_(bt->root_arity_), rank_select_support_(bt->rank_select_support_) {
+CBlockTree::CBlockTree(BlockTree * bt) : arity_(bt->arity_), root_arity_(bt->root_arity_), rank_select_support_(bt->rank_select_support_) {
     std::vector<Block*> first_level = {bt->root_block_};
     bool is_first_level = false;
     while (!is_first_level) {
@@ -146,7 +146,7 @@ CBlockTree::CBlockTree(BlockTree * bt) : r_(bt->r_), root_arity_(bt->root_arity_
 }
 
 CBlockTree::CBlockTree(std::istream& in) {
-    in.read((char *) &r_, sizeof(int));
+    in.read((char *) &arity_, sizeof(int));
     in.read((char *) &root_arity_, sizeof(int));
     in.read((char *) &first_level_length_, sizeof(int));
     in.read((char *) &number_of_levels_, sizeof(int));
@@ -244,10 +244,10 @@ int CBlockTree::access(int i) {
     int level = 0;
     while (level < number_of_levels_-1) {
         if ((*bt_bv_[level])[current_block]) { // Case InternalBlock
-            current_length /= r_;
+            current_length /= arity_;
             int child_number = i/current_length;
             i -= child_number*current_length;
-            current_block = (*bt_bv_rank_[level])(current_block)*r_ + child_number;
+            current_block = (*bt_bv_rank_[level])(current_block)*arity_ + child_number;
             ++level;
         } else { // Case BackBlock
             int encoded_offset = (*bt_offsets_[level])[current_block-(*bt_bv_rank_[level])(current_block+1)];
@@ -276,11 +276,11 @@ int CBlockTree::rank(int c, int i) {
     int r = (*bt_first_level_prefix_ranks_[c])[current_block];
     while (level < number_of_levels_-1) {
         if ((*bt_bv_[level])[current_block]) { // Case InternalBlock
-            current_length /= r_;
+            current_length /= arity_;
             int child_number = i/current_length;
             i -= child_number*current_length;
 
-            int firstChild = (*bt_bv_rank_[level])(current_block)*r_;
+            int firstChild = (*bt_bv_rank_[level])(current_block)*arity_;
             for (int child = firstChild; child < firstChild + child_number; ++child)
                 r += (*ranks[level+1])[child];
             current_block = firstChild + child_number;
@@ -344,16 +344,16 @@ int CBlockTree::select(int c, int k) {
     int level = 0;
     while (level < number_of_levels_-1) {
         if ((*bt_bv_[level])[current_block]) { // Case InternalBlock
-            int firstChild = (*bt_bv_rank_[level])(current_block)*r_;
+            int firstChild = (*bt_bv_rank_[level])(current_block)*arity_;
             int child = firstChild;
             int r = (*ranks[level+1])[child];
-            int last_possible_child = (firstChild + r_-1 > (*ranks[level+1]).size()-1) ?  (*ranks[level+1]).size()-1 : firstChild + r_-1;
+            int last_possible_child = (firstChild + arity_-1 > (*ranks[level+1]).size()-1) ?  (*ranks[level+1]).size()-1 : firstChild + arity_-1;
             while ( child < last_possible_child && k > r) { //Border conditions?
                 ++child;
                 r+= (*ranks[level+1])[child];
             }
             k -= r - (*ranks[level+1])[child];
-            current_length /= r_;
+            current_length /= arity_;
             s += (child-firstChild)*current_length;
             current_block = child;
             ++level;
@@ -445,7 +445,7 @@ int CBlockTree::size() {
 
 void CBlockTree::serialize(std::ostream& out) {
 
-    out.write((char *) &r_, sizeof(int));
+    out.write((char *) &arity_, sizeof(int));
     out.write((char *) &root_arity_, sizeof(int));
     out.write((char *) &first_level_length_, sizeof(int));
     out.write((char *) &number_of_levels_, sizeof(int));

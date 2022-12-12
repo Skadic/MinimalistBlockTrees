@@ -10,10 +10,10 @@ public:
     int init_;
     int end_;
 
-    HashString(size_t, std::string&, int, int);
+    HashString(size_t hash, std::string& source, int init, int end);
     ~HashString();
 
-    bool operator==(const HashString&) const;
+    bool operator==(const HashString& other) const;
 };
 
 namespace std {

@@ -6,14 +6,14 @@
 class LeafBlock : public Block {
 public:
 
-    LeafBlock(Block*, int64_t, int64_t, std::string&);
+    LeafBlock(Block* parent, int64_t start_index, int64_t end_index, std::string& source);
     ~LeafBlock();
 
-    int add_rank_select_support(int);
+    int add_rank_select_support(int character);
     int64_t size();
 
-    int rank(int, int);
-    int select(int, int);
+    int rank(int character, int i);
+    int select(int character, int rank);
 
     int access(int);
 };

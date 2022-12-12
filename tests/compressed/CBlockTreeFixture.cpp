@@ -102,7 +102,7 @@ INSTANTIATE_TEST_CASE_P(PCBlockTreeTest,
 // This test checks if the fields and
 // number_of_levels_ are correct
 TEST_P(CBlockTreeFixture, general_fields_check) {
-    EXPECT_EQ(c_block_tree_->r_, r_) << "Incorrect tree arity";
+    EXPECT_EQ(c_block_tree_->arity_, r_) << "Incorrect tree arity";
     EXPECT_EQ(c_block_tree_->root_arity_, root_arity_) << "Incorrect root arity";
     auto iterator = block_tree_->levelwise_iterator();
     std::vector<Block*> level;

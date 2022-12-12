@@ -13,11 +13,11 @@ public:
     void clean_unnecessary_expansions();
 
     bool is_leaf();
-    int access(int);
-    int add_rank_select_support(int);
+    int access(int i);
+    int add_rank_select_support(int character);
 
-    int rank(int, int);
-    int select(int, int);
+    int rank(int character, int i);
+    int select(int character, int rank);
 
 };
 
