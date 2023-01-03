@@ -1,23 +1,28 @@
 #include "../../includes/blocktree.utils/RabinKarp.h"
 
-
-RabinKarp::RabinKarp(std::string& s, int init, int size, int range, int sigma) : sigma_(sigma), size_(size), s_(s), hash_(0), init_(init), rm_(1), kp_(range){
-    for (int i = init; i < init+size_; ++i) {
-        hash_ = (sigma_ * hash_ + s_[i]+128) % kp_; // sigma or  little prime
+RabinKarp::RabinKarp(std::string &s, int start_index, int window_size, int range, int sigma) :
+    sigma_(sigma),
+    window_size_(window_size),
+    s_(s),
+    hash_(0),
+    current_index_(start_index),
+    rm_(1),
+    range_(range) {
+    // Calculate the initial hash value
+    for (int i = start_index; i < start_index + window_size_; ++i) {
+        hash_ = (sigma_ * hash_ + s_[i] + 128) % range_; // sigma or  little prime
     }
 
-    for (int i = 0; i < size_-1; ++i) {
-        rm_ = (rm_ * sigma_) % kp_;
+    for (int i = 0; i < window_size_ - 1; ++i) {
+        rm_ = (rm_ * sigma_) % range_;
     }
 }
 
-
-uint64_t RabinKarp::hash() {
-    return hash_;
-}
+uint64_t RabinKarp::hash() { return hash_; }
 
 void RabinKarp::next() {
-    hash_ = (hash_ + kp_ - rm_*(s_[init_]+128) % kp_) % kp_;
-    init_++;
-    hash_ = (hash_*sigma_ + s_[init_+size_-1]+128) % kp_;
+    // Calculate the next hash value
+    hash_ = (hash_ + range_ - rm_ * (s_[current_index_] + 128) % range_) % range_;
+    current_index_++;
+    hash_ = (hash_ * sigma_ + s_[current_index_ + window_size_ - 1] + 128) % range_;
 }
