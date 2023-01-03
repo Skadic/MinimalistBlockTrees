@@ -2,36 +2,37 @@
 #include <unordered_set>
 #include <vector>
 
-
 ///
 /// @brief Gets the lowest level of the given block tree that is not fully comprised of internal blocks.
 ///
-/// In other words, this returns the lowest level of the block tree that is still *complete* in the sense that there are no gaps in the level
-/// where blocks are missing.
+/// In other words, this returns the lowest level of the block tree that is still *complete* in the sense that there are
+/// no gaps in the level where blocks are missing.
 ///
 /// @param bt The uncompressed pointer-based block tree
-/// @return A vector of pointers pointing to the blocks of the lowest complete level of the given block tree in order from left to right.
+/// @return A vector of pointers pointing to the blocks of the lowest complete level of the given block tree in order
+/// from left to right.
 ///
-auto get_lowest_complete_level(BlockTree *bt) -> std::vector<Block*> {
-    std::vector<Block*> current_level = {bt->root_block_};
+auto get_lowest_complete_level(BlockTree *bt) -> std::vector<Block *> {
+    std::vector<Block *> current_level = {bt->root_block_};
     while (true) {
-        for (Block* b: current_level) {
-            if(b->is_leaf()) { 
-               return current_level;
+        for (Block *b : current_level) {
+            if (b->is_leaf()) {
+                return current_level;
             }
         }
         current_level = bt->next_level(current_level);
     }
-
 }
 
 ///
 /// @brief Populates the rank and prefix rank attributes for the lowest complete level of the compressed block tree.
 ///
-/// This corresponds to the fields CBlockTree::lowest_level_prefix_ranks_ and the entry for the lowest level in CBlockTree::lowest_level_block_ranks_.
+/// This corresponds to the fields CBlockTree::lowest_level_prefix_ranks_ and the entry for the lowest level in
+/// CBlockTree::lowest_level_block_ranks_.
 ///
 /// @param cbt The compressed block tree whose fields to populate.
-/// @param lowest_level_blocks The blocks of the lowest complete level in the original block tree in order from left to right.
+/// @param lowest_level_blocks The blocks of the lowest complete level in the original block tree in order from left to
+/// right.
 ///
 void populate_lowest_complete_level_ranks(CBlockTree *cbt, const std::vector<Block *> &lowest_complete_level_blocks) {
     /// Saves the current cumulative ranks for each character up to the block in the current iteration
@@ -40,26 +41,29 @@ void populate_lowest_complete_level_ranks(CBlockTree *cbt, const std::vector<Blo
     // Iterate through the rank values for the first block and create a new empty ranks vector for each of them
     // The new rank vectors are used for the compressed block tree
     for (auto &[character, _] : lowest_complete_level_blocks[0]->ranks_) {
-        cbt->lowest_complete_level_prefix_ranks_[character] = new sdsl::int_vector<>(lowest_complete_level_blocks.size());
+        cbt->lowest_complete_level_prefix_ranks_[character] =
+            new sdsl::int_vector<>(lowest_complete_level_blocks.size());
         cbt->block_ranks_[character].push_back(new sdsl::int_vector<>(lowest_complete_level_blocks.size()));
     }
 
-    // iterate through every block of the lowest level and for each character, 
-    // calculate the ranks up to this block, as well as the ranks inside this block  
+    // iterate through every block of the lowest level and for each character,
+    // calculate the ranks up to this block, as well as the ranks inside this block
     for (int block_index = 0; block_index < lowest_complete_level_blocks.size(); ++block_index) {
         // For every character, save its prefix rank value up to this block into the new map
-        // This will take the prefix rank values calculated in the previous iteration, 
-        // since we don't want to save the rank values *before* this block 
-        for (auto &[character, rank] : current_prefix_ranks) { 
+        // This will take the prefix rank values calculated in the previous iteration,
+        // since we don't want to save the rank values *before* this block
+        for (auto &[character, rank] : current_prefix_ranks) {
             (*cbt->lowest_complete_level_prefix_ranks_[character])[block_index] = rank;
         }
-      
+
         // Lookup the ranks for each character inside the current block
         for (auto &[character, _] : lowest_complete_level_blocks[block_index]->ranks_) {
             // Set the ranks of this character for the current block
-            (*cbt->block_ranks_[character][0])[block_index] = lowest_complete_level_blocks[block_index]->ranks_[character];
+            (*cbt->block_ranks_[character][0])[block_index] =
+                lowest_complete_level_blocks[block_index]->ranks_[character];
             // Store the cumulative ranks before this block into the temporary map
-            // This will be the prefix ranks value for the *next* block (since we only want to cound the ranks *before*) each block
+            // This will be the prefix ranks value for the *next* block (since we only want to cound the ranks *before*)
+            // each block
             current_prefix_ranks[character] += lowest_complete_level_blocks[block_index]->ranks_[character];
         }
     }
@@ -76,7 +80,7 @@ void populate_lowest_complete_level_ranks(CBlockTree *cbt, const std::vector<Blo
 ///
 /// @brief Populates the rank values inside each block for the given level.
 ///
-/// This modifies the block_ranks_ field. The rank information in the given level 
+/// This modifies the block_ranks_ field. The rank information in the given level
 /// is pushed on top of block_ranks_[character] for each character.
 ///
 /// @param cbt The compressed block tree whose fields to populate.
@@ -85,7 +89,8 @@ void populate_lowest_complete_level_ranks(CBlockTree *cbt, const std::vector<Blo
 void populate_level_block_ranks(CBlockTree *cbt, std::vector<Block *> &level) {
     // Allocate a new int vector for each character to store its ranks
     // We are pushing the new int vector onto the vector containing all intvectors
-    // That means that from now on the last element (.back()) for each character is the one we need to worry about for this level
+    // That means that from now on the last element (.back()) for each character is the one we need to worry about for
+    // this level
     for (auto &[character, _] : level[0]->ranks_) {
         cbt->block_ranks_[character].push_back(new sdsl::int_vector<>(level.size()));
     }
@@ -103,19 +108,22 @@ void populate_level_block_ranks(CBlockTree *cbt, std::vector<Block *> &level) {
     }
 }
 
-CBlockTree::CBlockTree(BlockTree * bt) : arity_(bt->arity_), root_arity_(bt->root_arity_), rank_select_support_(bt->rank_select_support_) {
-    std::vector<Block*> lowest_complete_level = get_lowest_complete_level(bt);
-    
+CBlockTree::CBlockTree(BlockTree *bt) :
+    arity_(bt->arity_),
+    root_arity_(bt->root_arity_),
+    rank_select_support_(bt->rank_select_support_) {
+    std::vector<Block *> lowest_complete_level = get_lowest_complete_level(bt);
+
     /*
     std::cout << "level:" << std::endl;
     for (Block *r : lowest_complete_level) {
-      std::cout << "(" << r->start_index_ << "," << r->end_index_ << "), ";    
+      std::cout << "(" << r->start_index_ << "," << r->end_index_ << "), ";
     }
     std::cout << std::endl;
 
     std::cout << "first_blocks:" << std::endl;
     for (Block *r : lowest_complete_level) {
-      std::cout << "(" << r->first_block_->start_index_ << "," << r->first_block_->end_index_ << "), ";    
+      std::cout << "(" << r->first_block_->start_index_ << "," << r->first_block_->end_index_ << "), ";
     }
     std::cout << std::endl;
 
@@ -126,23 +134,24 @@ CBlockTree::CBlockTree(BlockTree * bt) : arity_(bt->arity_), root_arity_(bt->roo
         std::cout << "empty second block" << std::endl;
         break;
       }
-      std::cout << "(" << second_block->start_index_ << "," << second_block->end_index_ << "), ";    
+      std::cout << "(" << second_block->start_index_ << "," << second_block->end_index_ << "), ";
     }
     std::cout << std::endl;
     */
 
-    //std::cout << "Second Ranks for 'a':" << std::endl;
-    
+    // std::cout << "Second Ranks for 'a':" << std::endl;
+
     /*for (Block *r : lowest_complete_level) {
-      std::cout << r->second_ranks_.at('a') << ",";    
+      std::cout << r->second_ranks_.at('a') << ",";
     }
     std::cout << std::endl;*/
 
-    // Populate the rank values in the lowest level of the tree that is still complete (i.e. there are no blocks missing)
+    // Populate the rank values in the lowest level of the tree that is still complete (i.e. there are no blocks
+    // missing)
     populate_lowest_complete_level_ranks(this, lowest_complete_level);
 
     lowest_level_block_length_ = lowest_complete_level[0]->length();
-    number_of_levels_    = 0;
+    number_of_levels_          = 0;
 
     // Continue further down the tree.
     std::vector<Block *> current_level = lowest_complete_level;
@@ -151,9 +160,9 @@ CBlockTree::CBlockTree(BlockTree * bt) : arity_(bt->arity_), root_arity_(bt->roo
     while (next_level.size() != 0) {
         // A bit vector for this level that marks whether the specific block is internal (= 1) or not (= 0).
         sdsl::bit_vector *is_internal_block = new sdsl::bit_vector(current_level.size(), 0);
-        
+
         int number_of_leaves = 0;
-        // Iterate through this level and update each block's level index (this block's index inside the current level), 
+        // Iterate through this level and update each block's level index (this block's index inside the current level),
         // check whether they are internal blocks and count the number of leaves
         for (int i = 0; i < current_level.size(); ++i) {
             current_level[i]->level_index_ = i;
@@ -168,9 +177,9 @@ CBlockTree::CBlockTree(BlockTree * bt) : arity_(bt->arity_), root_arity_(bt->roo
 
         // Now we populate the rank values in this level
         populate_level_block_ranks(this, next_level);
-        
+
         // TODO Find out what these are
-        sdsl::int_vector<> *current_level_offsets = new sdsl::int_vector<>(number_of_leaves);
+        sdsl::int_vector<>                           *current_level_offsets = new sdsl::int_vector<>(number_of_leaves);
         std::unordered_map<int, sdsl::int_vector<> *> current_level_second_ranks;
 
         for (auto [character, _] : current_level[0]->ranks_) {
@@ -178,18 +187,18 @@ CBlockTree::CBlockTree(BlockTree * bt) : arity_(bt->arity_), root_arity_(bt->roo
         }
 
         // The index of the current block in this level, not counting internal nodes
-        int j = 0;
-        const int current_length   = current_level.front()->length();
+        int       j              = 0;
+        const int current_length = current_level.front()->length();
         for (int i = 0; i < current_level.size(); ++i) {
             // If the current block is not internal
             if (!(*is_internal_block)[i]) {
                 // This is now the j-th non-internal block on this level
-                // Go through the block's "second_rank" for each character 
+                // Go through the block's "second_rank" for each character
                 // and populate the pre-allocated int vectors with it
                 for (auto &[character, second_rank] : current_level[i]->second_ranks_) {
                     (*current_level_second_ranks[character])[j] = second_rank;
                 }
-                
+
                 (*current_level_offsets)[j++] =
                     current_level[i]->first_block_->level_index_ * current_length + current_level[i]->offset_;
             }
@@ -197,7 +206,6 @@ CBlockTree::CBlockTree(BlockTree * bt) : arity_(bt->arity_), root_arity_(bt->roo
 
         sdsl::util::bit_compress(*current_level_offsets);
         bt_offsets_.push_back(current_level_offsets);
-
 
         for (auto pair : current_level_second_ranks) {
             sdsl::util::bit_compress(*(pair.second));

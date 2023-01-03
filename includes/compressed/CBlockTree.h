@@ -16,8 +16,8 @@ class CBlockTree {
     int  number_of_levels_;
     bool rank_select_support_;
 
-    /// @brief For each level l, stores a bitvector B, 
-    /// where B[j] == 1 if the block at index j on level l is an internal block 
+    /// @brief For each level l, stores a bitvector B,
+    /// where B[j] == 1 if the block at index j on level l is an internal block
     /// This maps level -> block index -> is internal
     std::vector<sdsl::bit_vector *>        is_internal_;
     std::vector<sdsl::rank_support_v<1> *> bt_bv_rank_;
@@ -32,12 +32,12 @@ class CBlockTree {
     sdsl::int_vector<>           *alphabet_;
     std::unordered_map<char, int> mapping_;
 
-    /// @brief For the lowest level of the tree, saves the ranks up to (and not including) a specific block for each character
-    /// This maps character -> block index -> rank  
+    /// @brief For the lowest level of the tree, saves the ranks up to (and not including) a specific block for each
+    /// character This maps character -> block index -> rank
     std::unordered_map<int, sdsl::int_vector<> *> lowest_complete_level_prefix_ranks_;
 
     /// @brief For the lowest level this stores the ranks of this character inside the current block
-    /// This maps character -> block index -> rank 
+    /// This maps character -> block index -> rank
     std::unordered_map<int, std::vector<sdsl::int_vector<> *>> block_ranks_;
     std::unordered_map<int, std::vector<sdsl::int_vector<> *>> bt_second_ranks_;
 

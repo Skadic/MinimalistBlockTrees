@@ -8,27 +8,24 @@
 
 #include <unordered_map>
 
-
 class CBitBlockTree {
-public:
+  public:
     int arity_; // Arity
     int first_level_length_;
     int number_of_levels_;
 
-    std::vector<sdsl::bit_vector*> bt_bv_; // 1 when is Internal Block
-    std::vector<sdsl::rank_support_v<1>*> bt_bv_rank_;
-    std::vector<sdsl::int_vector<>*> bt_offsets_;
-    sdsl::bit_vector* leaf_bv_;
+    std::vector<sdsl::bit_vector *>        bt_bv_; // 1 when is Internal Block
+    std::vector<sdsl::rank_support_v<1> *> bt_bv_rank_;
+    std::vector<sdsl::int_vector<> *>      bt_offsets_;
+    sdsl::bit_vector                      *leaf_bv_;
 
+    sdsl::int_vector<> *bt_first_level_prefix_ranks_;
 
-    sdsl::int_vector<>* bt_first_level_prefix_ranks_;
+    std::vector<sdsl::int_vector<> *> bt_ranks_;
+    std::vector<sdsl::int_vector<> *> bt_second_ranks_;
 
-    std::vector<sdsl::int_vector<>*> bt_ranks_;
-    std::vector<sdsl::int_vector<>*> bt_second_ranks_;
-
-
-    CBitBlockTree(BlockTree* source_tree, int one_symbol);
-    CBitBlockTree(std::istream& input);
+    CBitBlockTree(BlockTree *source_tree, int one_symbol);
+    CBitBlockTree(std::istream &input);
     virtual ~CBitBlockTree();
 
     int access(int i);
@@ -37,10 +34,9 @@ public:
     int select_0(int rank);
     int select_1(int rank);
 
-    int size();
-    int get_partial_size();
-    void serialize(std::ostream& output);
+    int  size();
+    int  get_partial_size();
+    void serialize(std::ostream &output);
 };
 
-
-#endif //BLOCKTREE_PCBLOCKTREE_H
+#endif // BLOCKTREE_PCBLOCKTREE_H

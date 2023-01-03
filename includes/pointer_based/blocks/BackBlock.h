@@ -4,10 +4,14 @@
 #include "Block.h"
 
 class BackBlock : public Block {
-public:
-
-    BackBlock(Block* parent, int64_t start_index, int64_t end_index, std::string& source, Block* first_block,
-                     Block* second_block, int offset);
+  public:
+    BackBlock(Block       *parent,
+              int64_t      start_index,
+              int64_t      end_index,
+              std::string &source,
+              Block       *first_block,
+              Block       *second_block,
+              int          offset);
     ~BackBlock();
 
     int access(int i);
@@ -17,4 +21,4 @@ public:
     int select(int character, int i);
 };
 
-#endif //BLOCKTREE_PBACKBLOCK_H
+#endif // BLOCKTREE_PBACKBLOCK_H
