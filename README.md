@@ -2,13 +2,13 @@
 This repository contains an implementation for the BlockTree data structure described [here](https://ieeexplore.ieee.org/document/7149265). Details of the implementation follow the experimental studies conducted in my MSc. thesis available [here](https://users.dcc.uchile.cl/~gnavarro/mem/algoritmos/tesisManuel.pdf). This repositorie contains only the cannonical BlockTree version. If you want to play with the software used in this experimental study, it is available in the repo [https://github.com/elarielcl/BlockTrees](https://github.com/elarielcl/BlockTrees)
 # Installation Guide
 First clone the repo:
-```
+```bash
  git clone https://github.com/elarielcl/MinimalistBlockTrees.git
  ```
  
 This project is a CMake project. To build this project with some runnables you should do
 
-```
+```bash
 cd MinimalistBlockTrees
 mkdir build
 cd build
@@ -18,7 +18,7 @@ make
 ```
 
 You can add an executable by writing your file in the `executables` directory and add its name to the `executables/CMakeLists.txt` file, this adds the necessary libraries for you:
-```
+```cpp
 set(project_EXECUTABLES
         <new_executable>
         main)
@@ -27,7 +27,7 @@ set(project_EXECUTABLES
 
  ## Usage Example
  Let's suppose we want to build a BlockTree, so we do:
- ```
+ ```cpp
  ...
  std::string input = "AACCCTGCTGCTGATCGGATCGTAGC";
  int r = 2; //The arity of the BlockTree
@@ -39,16 +39,16 @@ set(project_EXECUTABLES
   ...
  ```
   in case you want to build the a more compact version but without theoretical guarantiee instead you can replace the last two lines with
- ```
+ ```cpp
  bt->process_back_pointers_heuristic();
  ```
  .. now you have a proper BlockTree answering access queries(`bt->access(i)`), if you want to give it ``bt->rank(c,i) & bt->select(c,j)`` support you should do:
- ```
+ ```cpp
  for (int c: characters)
      bt->add_rank_select_support(c);
  ```
  The above is a pointer-based implementation of BlockTrees, if you want to have a more compact representation (using bitvectors to represent the tree) you should do:
- ```
+ ```cpp
  ...
  CBlockTree *cbt = new CBlockTree(bt); // Builds a more compact BlockTree representation
  cbt->access(i);
@@ -60,7 +60,7 @@ set(project_EXECUTABLES
  ...
  ```
  If your input is a bitmap you can build an (even) more compact representation specialized for bitmaps:
- ```
+ ```cpp
  ...
  CBitBlockTree *cbbt = new CBitBlockTree(bt, '('); // It assumes that the BlockTree represents a bitmap whose "1" 
                                                    //is the second argument of the contruction, the rest are "0"s
@@ -72,7 +72,7 @@ set(project_EXECUTABLES
  ```
  
  ... and never forget to delete your trash ;)
- ```
+ ```cpp
  ...
  delete bt;
  delete cbt;
