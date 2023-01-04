@@ -34,7 +34,7 @@ public:
         buffer << t.rdbuf();
         input_= buffer.str();
         block_tree_ = new BlockTree(input_, r_, root_arity_, max_leaf_length_);
-        block_tree_->process_back_pointers();
+        block_tree_->process_block_tree();
     }
 
     virtual ~BlockTreeWithoutCleanningFixture() {

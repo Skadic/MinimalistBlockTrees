@@ -8,6 +8,7 @@
 
 #include <stack>
 #include <unordered_set>
+#include <vector>
 
 using Level        = BlockTree::Level;
 using BlockMap     = BlockTree::BlockMap;
@@ -23,31 +24,7 @@ BlockTree::BlockTree(std::string &input,
     root_arity_(root_block_arity),
     input_(input),
     leaf_length_(leaf_length),
-    rank_select_support_(rs_support),
-    alphabet_size_(0),
-    to_ascii_(),
-    to_alphabet_() {
-
-    // Determine which characters appear in the text
-    std::array<bool, 256> exists_in_text;
-    std::ranges::fill(exists_in_text, false);
-    exists_in_text[0] = true;
-
-    for (auto c : input) {
-        uint8_t c_int         = static_cast<uint8_t>(c);
-        exists_in_text[c_int] = true;
-    }
-
-    // Generate the mappings between our alphabet and the extended ascii alphabet
-    for (size_t character = 0; character < exists_in_text.size(); character++) {
-        if (!exists_in_text[character]) {
-            to_alphabet_[character] = 0;
-            continue;
-        }
-        to_ascii_[alphabet_size_] = character;
-        to_alphabet_[character]   = alphabet_size_;
-        alphabet_size_++;
-    }
+    rank_select_support_(rs_support) {
 
     // If a leaf is supposed to be greater than the text, or if the arity is greater than the text is long, just make
     // the entire tree one leaf node
@@ -56,7 +33,7 @@ BlockTree::BlockTree(std::string &input,
     } else {
         const int number_of_leaves =
             (input_.size() % leaf_length_ == 0) ? input_.size() / leaf_length_ : input_.size() / leaf_length_ + 1;
-        // The current height of the trea
+        // The current height of the tree
         int height = 0;
 
         // The current max. index of nodes at the current height
@@ -76,7 +53,7 @@ BlockTree::BlockTree(std::string &input,
 
     // Actually build the block tree by actually building backlinks etc.
     if (process_block_tree) {
-        this->process_back_pointers();
+        this->process_block_tree();
         this->clean_unnecessary_expansions();
     }
 
@@ -96,9 +73,9 @@ BlockTree::~BlockTree() { delete root_block_; }
 
 void BlockTree::add_rank_select_support(int c) { root_block_->add_rank_select_support(c); }
 
-int BlockTree::rank(int c, int i) { return root_block_->rank(to_alphabet_[c], i); }
+int BlockTree::rank(int c, int i) { return root_block_->rank(c, i); }
 
-int BlockTree::select(int c, int j) { return root_block_->select(to_alphabet_[c], j); }
+int BlockTree::select(int c, int j) { return root_block_->select(c, j); }
 
 std::vector<Level> BlockTree::levelwise_iterator() {
     std::vector<Level> result = {{root_block_}};
@@ -126,7 +103,7 @@ void BlockTree::clean_unnecessary_expansions() {
     }
 }
 
-int BlockTree::access(int i) { return to_ascii_[root_block_->access(i)]; }
+int BlockTree::access(int i) { return root_block_->access(i); }
 
 Level BlockTree::next_level(Level &level) {
     // The arity of the current level. If we're at the root, then the arity is of course the root arity.
@@ -155,7 +132,7 @@ inline bool blocks_adjacent(const Block *left, const Block *right) {
     return left->end_index_ == right->start_index_ - 1;
 }
 
-void BlockTree::forward_pair_window_block_scan(Level        &level,
+void BlockTree::window_block_pair_scan(Level        &level,
                                                int           pair_window_size,
                                                int           N,
                                                BlockPairMap &pair_hashtable) {
@@ -218,7 +195,7 @@ void BlockTree::forward_pair_window_block_scan(Level        &level,
     }
 }
 
-void BlockTree::forward_window_block_scan(Level &level, int window_size, int N, BlockMap &hashtable) {
+void BlockTree::window_block_scan(Level &level, int window_size, int N, BlockMap &hashtable) {
     // The current block index inside this level
     int i = 0;
     // Iterate through all blocks on this level
@@ -249,8 +226,8 @@ void BlockTree::forward_window_block_scan(Level &level, int window_size, int N, 
                 if (result != hashtable.end()) {
                     std::vector<Block *> &blocks = result->second;
                     // For each block that matches the hashed window, set their first occurrence,
-                    // the first block in which the source is contained (since it can span 2 blocks there is a first and
-                    // a second block) and the offset in the source blocks at which the string appears
+                    // the first block in which the source is contained (since it can span 2 blocks, there is a first
+                    // and a second block) and the offset in the source blocks at which the string appears
                     for (Block *b : blocks) {
                         b->first_occurrence_level_index_ = i;
                         b->first_block_                  = const_cast<Block *>(current);
@@ -277,7 +254,7 @@ void BlockTree::forward_window_block_scan(Level &level, int window_size, int N, 
     }
 }
 
-void BlockTree::block_scan(Level &level, int N, BlockMap &hashtable) {
+void BlockTree::hash_blocks(Level &level, int N, BlockMap &hashtable) {
     // For every block in this level, calculate its fingerprint and insert it into the hashtable
     for (Block *b : level) {
         RabinKarp  rk(input_, b->start_index_, b->length(), N);
@@ -293,23 +270,11 @@ void BlockTree::block_scan(Level &level, int N, BlockMap &hashtable) {
     }
 }
 
-void BlockTree::process_level(Level &level) {
-
-    // Large prime
-    const int N = 6700417;
-    // The length of blocks on this level
-    const int block_length = level.front()->length();
-
-    // Hash the blocks such that a string maps to all blocks whose blocks have the same hash
-    BlockMap hashtable;
-    block_scan(level, N, hashtable);
-
-    // Do the same thing as block_scan does but for pairs of neighboring blocks
-    // We take a pair of blocks, hash the string they represent
-    // and insert the block pair into the hashtable at the appropriate place
-    BlockPairMap pair_hashtable;
+void BlockTree::hash_block_pairs(Level &level, int N, BlockPairMap &pair_hashtable) {
     for (auto it = level.begin(); it != level.end();) {
-        for (++it; it != level.end() && (*(it - 1))->end_index_ == (*it)->start_index_ - 1; ++it) {
+        // For every contiguous segment of blocks hash two neighboring blocks and add the block pair to the hashtable
+        // with the hashed string as their key
+        for (++it; it != level.end() && blocks_adjacent(*(it - 1), *it); ++it) {
             Block     *current          = *(it - 1);
             Block     *next             = *it;
             size_t     pair_length      = current->length() + next->length();
@@ -327,18 +292,15 @@ void BlockTree::process_level(Level &level) {
             }
         }
     }
+}
 
-    // Window block scan
-    // Establishes first occurrences of blocks
-    forward_window_block_scan(level, block_length, N, hashtable);
-
-    // Window Pair of blocks scans
-    if (level.size() > 1)
-        forward_pair_window_block_scan(level, block_length * 2, N, pair_hashtable);
-
+void BlockTree::create_back_blocks(Level &level) {
     // BackBlock creation
     for (int i = 0; i < level.size(); ++i) {
         Block *b = level[i];
+        // If this block's content (or at least part of it) appears somewhere else in the text both as a right block and
+        // as a left block, and its first occurrence is before this block, then we create a backlink to its original
+        // source
         if (b->left_ && b->right_ && b->first_occurrence_level_index_ < b->level_index_) {
             // This doesn't have the bug of the dangling reference fixed with first_occurrence_level_index, because it
             // shouldn't happen that A block points back to a BackBlock
@@ -361,9 +323,41 @@ void BlockTree::process_level(Level &level) {
     }
 }
 
-void BlockTree::process_back_pointers() {
-    std::vector<Block *> current_level = {root_block_};
-    std::stack<Block *>  none_blocks;
+void BlockTree::process_level(Level &level) {
+    // Large prime
+    const int N = 6700417;
+    // The length of blocks on this level
+    const int block_length = level.front()->length();
+
+    // Handle single blocks
+    {
+        // Hash the blocks such that a string maps to all blocks whose blocks have the same hash
+        BlockMap hashtable;
+        hash_blocks(level, N, hashtable);
+
+        // Window block scan
+        // Establishes first occurrences of blocks
+        window_block_scan(level, block_length, N, hashtable);
+    }
+
+    // Handle block pairs if there is more than one block in this level
+    if (level.size() > 1) {
+        // We take a pair of blocks, hash the string they represent
+        // and insert the block pair into the hashtable at the appropriate place
+        BlockPairMap pair_hashtable;
+        hash_block_pairs(level, N, pair_hashtable);
+
+        // Window Pair of blocks scans
+        window_block_pair_scan(level, block_length * 2, N, pair_hashtable);
+    }
+
+    // With the data in the blocks populated, create the back blocks
+    create_back_blocks(level);
+}
+
+void BlockTree::process_block_tree() {
+    Level               current_level = {root_block_};
+    std::stack<Block *> none_blocks;
     // While there is a new level in the tree to process
     while ((current_level = next_level(current_level)).size() != 0) {
         const auto current_level_block_length = current_level[0]->length();
@@ -396,11 +390,11 @@ void BlockTree::process_level_heuristic(std::vector<Block *> &level) {
 
     // Block scan
     std::unordered_map<HashString, std::vector<Block *>> hashtable;
-    block_scan(level, N, hashtable);
+    hash_blocks(level, N, hashtable);
 
     // Window block scan
     // This is almost the same as forward_window_block_scan, as well as the BackBlock creation
-    forward_window_block_scan(level, level_length, N, hashtable);
+    window_block_scan(level, level_length, N, hashtable);
 
     // BackBlock creation
     for (int i = 0; i < level.size(); ++i) {

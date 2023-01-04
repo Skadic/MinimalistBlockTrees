@@ -21,7 +21,7 @@ int main() {
     }
 
     BlockTree* bt = new BlockTree(input, 2, 8, 32);
-    bt->process_back_pointers();
+    bt->process_block_tree();
     bt->clean_unnecessary_expansions();
     for (char c: characters)
         bt->add_rank_select_support(c);

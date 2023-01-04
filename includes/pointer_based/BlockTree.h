@@ -19,44 +19,48 @@ class BlockTree {
 
   private:
     ///
-    /// @brief Scans through this level's blocks and inserts each block into the hash table.
+    /// @brief Scans through this level's blocks, for each block hashes its represented string and inserts it into the
+    /// hashtable, mapping from the hashed string to all pairs of blocks that have the same hash.
     ///
     /// The hashes are Rabin-Karp fingerprints of the section of the input that the block spans.
     ///
     /// @param level A list of block pointers that represents a level in the tree
     /// @param N A large prime number
-    /// @param hashtable A hashtable mapping a Rabin-Karp-Hashed string to all blocks that match its hash.
+    /// @param hashtable A hashtable mapping a Rabin-Karp-hashed string to all blocks that match its hash.
     ///
-    void block_scan(std::vector<Block *> &, int, std::unordered_map<HashString, std::vector<Block *>> &);
+    void hash_blocks(Level &level, int N, BlockMap &hashtable);
+
+    ///
+    /// @brief Scans through this level with a window of two blocks, hashes the represented string for each block pair
+    /// and inserts it into a hashtable, mapping from the hashed string to all pairs of blocks that have the same hash.
+    ///
+    /// The hashes are Rabin-Karp fingerprints of the section of the input that the block pair spans.
+    ///
+    /// @param level A list of block pointers that represents a level in the tree
+    /// @param N A large prime number
+    /// @param hashtable A hashtable mapping a Rabin-Karp-hashed string to all block pairs that match its hash.
+    ///
+    void hash_block_pairs(Level &level, int N, BlockPairMap &hashtable);
 
   public:
-    int         arity_; // Arity
-    int         root_arity_;
-    int         leaf_length_;
-    std::string input_; // Input sequence of the Tree
-    Block      *root_block_;
-    bool        rank_select_support_;
-
-    /**
-     * @sigma_ Alphabet Size
-     */
-    uint8_t alphabet_size_;
-
-    /**
-     * @to_ascii_ Maps an entry in the block tree to its corresponding extended ascii character
-     */
-    std::array<uint8_t, 256> to_ascii_;
-
-    /**
-     * @to_alphabet_ Maps an extended ascii character to its representation in this block tree
-     */
-    std::array<uint8_t, 256> to_alphabet_;
+    /// This tree's arity (except for the root node)
+    int arity_;
+    /// The root node's arity
+    int root_arity_;
+    /// The maximum length of a leaf node.
+    int leaf_length_;
+    /// Input sequence of the Tree
+    std::string input_;
+    /// The root block
+    Block *root_block_;
+    /// Whether this tree is built with rank and select support
+    bool rank_select_support_;
 
     BlockTree(std::string &source,
-              int          r,
+              int          arity,
               int          root_block_arity,
               int          leaf_length,
-              bool         clean               = false,
+              bool         process_block_tree  = false,
               bool         rank_select_support = false);
     ~BlockTree();
 
@@ -70,15 +74,26 @@ class BlockTree {
     ///
     /// @brief Actually build the block tree and insert back-links for repeated blocks.
     ///
-    void process_back_pointers();
+    void process_block_tree();
     void clean_unnecessary_expansions();
 
-    void process_level_heuristic(std::vector<Block *> &);
-    void process_level(std::vector<Block *> &);
+  private:
+    void process_level_heuristic(Level &level);
+
+    ///
+    /// @brief Calculate the necessary data, populate the fields in the blocks and create backlinks in this level.
+    ///
+    /// @param level The level to process.
+    ///
+    void process_level(Level &level);
 
     ///
     /// @brief Scan for occurrences of strings (of size window_size) that also exist in the hashtable and set the first
     /// occurrences and backlinks of the blocks that match these strings.
+    ///
+    /// The hashtable should contain a mapping for each block that exists in the tree. Each mapping should map from the
+    /// string represented by the block, to a vector of all blocks that share the same hash value.
+    /// This can be calculated with `hash_blocks`.
     ///
     /// This scans through all blocks on this level with a window of the given size and upon recognizing a string that
     /// exists in the hashtable, gets all blocks that match that string and for each block creates a backlink to its
@@ -89,14 +104,16 @@ class BlockTree {
     /// @param N A large prime number
     /// @param hashtable A hashtable mapping a Rabin-Karp-Hashed string to all blocks that match its hash.
     ///
-    void forward_window_block_scan(std::vector<Block *>                                 &level,
-                                   int                                                   window_size,
-                                   int                                                   N,
-                                   std::unordered_map<HashString, std::vector<Block *>> &hashtable);
+    void window_block_scan(Level &level, int window_size, int N, BlockMap &hashtable);
 
     ///
     /// @brief Scan for occurrences of strings (of size window_size) that also exist in the hashtable
-    /// and for all pairs of blocks that match these strings they are marked.
+    /// and for all pairs of blocks that match these strings, they are marked.
+    ///
+    /// The hashtable should contain mappings for each contiguous block pair that exists in the tree.
+    /// Each mapping should map from the string represented by the block pair, to a vector of all block pairs that share
+    /// the same hash value.
+    /// This can be calculated with `hash_block_pairs`.
     ///
     /// This scans through all blocks on this level with a window of the given size and upon recognizing a string that
     /// exists in the hashtable, gets all block pairs that match that string and for each of these pairs marks in both
@@ -107,12 +124,19 @@ class BlockTree {
     /// @param N A large prime number
     /// @param hashtable A hashtable mapping a Rabin-Karp-Hashed string to all pairs of blocks that match its hash.
     ///
-    void forward_pair_window_block_scan(
-        std::vector<Block *>                                                     &level,
-        int                                                                       pair_window_size,
-        int                                                                       N,
-        std::unordered_map<HashString, std::vector<std::pair<Block *, Block *>>> &pair_hashtable);
+    void window_block_pair_scan(Level &level, int pair_window_size, int N, BlockPairMap &pair_hashtable);
 
+    ///
+    /// @brief Create back blocks from the information saved in the blocks on the given level.
+    ///
+    /// This requires the data in the blocks to be populated. See `window_block_scan` and `window_block_pair_scan` for
+    /// more.
+    ///
+    /// @param level A list of block pointers that represents a level in the tree.
+    ///
+    void create_back_blocks(Level &level);
+
+  public:
     ///
     /// @brief This takes a vector of blocks and returns a vector of their children in order.
     ///
@@ -121,16 +145,16 @@ class BlockTree {
     ///
     /// @param level A vector of pointers to blocks whose children to return.
     ///
-    std::vector<Block *> next_level(std::vector<Block *> &);
+    Level next_level(Level &level);
 
-    // Returns a vector of levels of nodes of the tree where
-    // each level is represented by a vector of its nodes (left-to-right).
-    //
-    // A simple levelwise (left-to-right) traversal of the tree would be:
-    //     for (std::vector<Block*> level : bt->levelwise_iterator()) {
-    //         for (Block* b : level) {
-    //             ...
-    std::vector<std::vector<Block *>> levelwise_iterator();
+    /// @brief Returns a vector of levels of nodes of the tree where each level is represented by a vector of its nodes
+    /// (left-to-right).
+    ///
+    /// A simple levelwise (left-to-right) traversal of the tree would be:
+    ///     for (std::vector<Block*> level : bt->levelwise_iterator()) {
+    ///         for (Block* b : level) {
+    ///             ...
+    std::vector<Level> levelwise_iterator();
 
     void print();
 };
