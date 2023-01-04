@@ -1,6 +1,8 @@
 .idea
 .cache
 .vscode
+node_modules
+package-lock.json
 compile_commands.json
 old_bt
 *.dec
