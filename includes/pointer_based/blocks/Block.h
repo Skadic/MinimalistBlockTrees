@@ -57,6 +57,14 @@ class Block {
     /// Pointers to this block's children
     std::vector<Block *> children_;
 
+    ///
+    /// @brief Create a new block.
+    ///
+    /// @param parent This block's parent.
+    /// @param start_index Ths block's start index in the source.
+    /// @param end_index Ths block's start index in the source.
+    /// @param source The source string.
+    ///
     Block(Block *parent, int64_t start_index, int64_t end_index, std::string &source);
     virtual ~Block();
 
@@ -117,7 +125,6 @@ class Block {
     ///
     /// @brief If an internal block has only leaves as its children, no other blocks are pointing to it and this block
     /// itself points back to another block, then replace it with a back block pointing back at its source.
-    ///
     ///
     virtual void clean_unnecessary_expansions();
 
