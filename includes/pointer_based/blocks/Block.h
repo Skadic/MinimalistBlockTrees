@@ -5,6 +5,9 @@
 #include <unordered_map>
 #include <vector>
 
+///
+/// @brief A block inside the block tree spanning a given span of the input text.
+///
 class Block {
   public:
     /// The parent block
@@ -65,15 +68,66 @@ class Block {
     int64_t     length() const;
     std::string represented_string();
 
+    ///
+    /// @brief Add support for `rank` and `select` to this block, for the given character.
+    ///
+    /// @param character A character to add rank select support for.
+    /// @return The number of times this character exists in this block.
+    ///
     virtual int add_rank_select_support(int character);
 
+    ///
+    /// @brief Accesses the given index.
+    ///
+    /// @param i An index
+    /// @return The character at index i in the source string.
+    ///
     virtual int access(int i);
+
+    ///
+    /// @brief A rank query on this block for a given character.
+    ///
+    /// Note, that this requires rank support on this block.
+    ///
+    /// @param character A character
+    /// @param i An index
+    /// @return The number of times the character occurs up to and including the given index.
+    ///
     virtual int rank(int character, int i);
+
+    ///
+    /// @brief A select query on this block for a given character.
+    ///
+    /// Note, that this requires select support on this block.
+    ///
+    /// @param character The character to search for
+    /// @param rank The rank of the character to look for
+    /// @return The position of the rank-th occurrence of the given character
+    ///
     virtual int select(int character, int rank);
 
+    ///
+    /// @brief Returns this block's children.
+    ///
+    /// @param leaf_length The tree's leaf length
+    /// @param arity This block's arity
+    ///
     virtual std::vector<Block *> &children(int leaf_length, int arity);
-    virtual void                  clean_unnecessary_expansions();
-    void                          replace_child(Block *old_child, Block *new_child);
+
+    ///
+    /// @brief If an internal block has only leaves as its children, no other blocks are pointing to it and this block
+    /// itself points back to another block, then replace it with a back block pointing back at its source.
+    ///
+    ///
+    virtual void clean_unnecessary_expansions();
+
+    ///
+    /// @brief Replaces one of this block's children with another block.
+    ///
+    /// @param old_child The old child to be replaced.
+    /// @param new_child The new child to take its place
+    ///
+    void replace_child(Block *old_child, Block *new_child);
 
     ///
     /// @brief Checks whether this block is a leaf block.

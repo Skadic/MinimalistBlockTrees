@@ -78,15 +78,20 @@ int BlockTree::rank(int c, int i) { return root_block_->rank(c, i); }
 int BlockTree::select(int c, int j) { return root_block_->select(c, j); }
 
 std::vector<Level> BlockTree::levelwise_iterator() {
+    // The initial state is just the root level
     std::vector<Level> result = {{root_block_}};
+
+    // If the first node of a level is a leaf, then there can be no level below this one
     while (!dynamic_cast<LeafBlock *>(result.back()[0])) {
         Level next_level = {};
+        // Iterate through each block and push its children into the current level
         for (Block *b : result.back()) {
             const auto block_arity = b == root_block_ ? root_arity_ : arity_;
             for (Block *child : b->children(leaf_length_, block_arity)) {
                 next_level.push_back(child);
             }
         }
+        // Add the new level to the result
         result.push_back(next_level);
     }
 
@@ -132,10 +137,7 @@ inline bool blocks_adjacent(const Block *left, const Block *right) {
     return left->end_index_ == right->start_index_ - 1;
 }
 
-void BlockTree::window_block_pair_scan(Level        &level,
-                                               int           pair_window_size,
-                                               int           N,
-                                               BlockPairMap &pair_hashtable) {
+void BlockTree::window_block_pair_scan(Level &level, int pair_window_size, int N, BlockPairMap &pair_hashtable) {
     // Iterate through all blocks on this level
     // Each iteration of this for loop will start at a segment on this level which consists of blocks that appear
     // contiguously in the input
@@ -438,6 +440,7 @@ void BlockTree::process_back_pointers_heuristic() {
 
 void BlockTree::print() {
     auto it = levelwise_iterator();
+    // For each level, print each block's start and end position
     for (auto &level : it) {
         for (Block *b : level) {
             std::cout << "[" << b->start_index_ << ", " << b->end_index_ << "], ";

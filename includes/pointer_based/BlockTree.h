@@ -147,8 +147,8 @@ class BlockTree {
     ///
     Level next_level(Level &level);
 
-    /// @brief Returns a vector of levels of nodes of the tree where each level is represented by a vector of its nodes
-    /// (left-to-right).
+    /// @brief Returns a vector of levels of blocks of the tree where each level is represented by a vector of its
+    /// blocks (left-to-right).
     ///
     /// A simple levelwise (left-to-right) traversal of the tree would be:
     ///     for (std::vector<Block*> level : bt->levelwise_iterator()) {
@@ -156,6 +156,9 @@ class BlockTree {
     ///             ...
     std::vector<Level> levelwise_iterator();
 
+    ///
+    /// @brief Prints this blocktree to the console
+    ///
     void print();
 };
 
