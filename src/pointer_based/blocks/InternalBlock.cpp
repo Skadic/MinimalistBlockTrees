@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <numeric>
 #include <pointer_based/blocks/BackBlock.h>
 #include <pointer_based/blocks/InternalBlock.h>
 #include <pointer_based/blocks/LeafBlock.h>
@@ -86,13 +88,12 @@ std::vector<Block *> &InternalBlock::children(const int leaf_length, const int a
 }
 
 void InternalBlock::clean_unnecessary_expansions() {
-    for (std::vector<Block *>::reverse_iterator rit = children_.rbegin(); rit != children_.rend(); ++rit) {
-        Block *b = (*rit);
-        b->clean_unnecessary_expansions();
+    for (auto it = children_.rbegin(); it != children_.rend(); ++it) {
+        (*it)->clean_unnecessary_expansions();
     }
 
-    bool all_children_leaves = true;
-    for (Block *child : children_) all_children_leaves = all_children_leaves && child->is_leaf();
+    // check whether all children are children
+    bool all_children_leaves = std::ranges::all_of(children_, [&](Block *child) { return child->is_leaf(); });
 
     // If all children are leaves, no other block has this as its source, and this block points back to an earlier block
     // as its source, we can replace this entire subtree with a back block pointing to its source
