@@ -99,7 +99,10 @@ std::vector<Level> BlockTree::levelwise_iterator() {
 }
 
 void BlockTree::clean_unnecessary_expansions() {
+    // Recursively clean clean_unnecessary_expansions. See the documentation for InternalBlock to see what this does
+    // exactly
     root_block_->clean_unnecessary_expansions();
+    // During cleaning, some of these values might have been invalidated.
     for (Level level : levelwise_iterator()) {
         for (int i = 0; i < level.size(); ++i) {
             level[i]->level_index_                  = i;

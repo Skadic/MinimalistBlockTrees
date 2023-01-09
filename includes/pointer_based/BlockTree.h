@@ -56,6 +56,19 @@ class BlockTree {
     /// Whether this tree is built with rank and select support
     bool rank_select_support_;
 
+    ///
+    /// @brief Create a new block tree from a string with the given properties.
+    ///
+    /// @param source The source string.
+    /// @param arity The arity each node should have except for the root.
+    /// @param root_block_arity The root node's arity.
+    /// @param leaf_length The maximum length of a leaf node. This is the node size under which recursion stops while
+    /// constructing the tree.
+    /// @param process_block_tree Whether to process the block tree immediately. Otherwise this can be manually done by
+    /// calling `process_block_tree` and `clean_unnecessary_expansions` after.
+    /// @param rank_select_support Whether to build this block tree with rank/select support. This can be manually donw
+    /// by calling `add_rank_select_support` for every desired character.
+    ///
     BlockTree(std::string &source,
               int          arity,
               int          root_block_arity,
@@ -64,10 +77,38 @@ class BlockTree {
               bool         rank_select_support = false);
     ~BlockTree();
 
-    int  access(int);
-    void add_rank_select_support(int);
-    int  rank(int, int);
-    int  select(int, int);
+    ///
+    /// @brief Get the character at the given index in the source.
+    ///
+    /// @param index An index in the source text.
+    /// @return The character at the given index in the source text.
+    ///
+    int access(int index);
+
+    ///
+    /// @brief Adds support for rank and select queries to this block tree.
+    ///
+    /// @param character The character for which to add the rank and select support.
+    ///
+    void add_rank_select_support(int character);
+
+    ///
+    /// @brief Gets the number the given character's occurrences up to an index.
+    ///
+    /// @param character A character to count.
+    /// @param index The index up to which occurences are counted.
+    /// @return The number of times the character appears up to this index.
+    ///
+    int rank(int character, int index);
+
+    ///
+    /// @brief Gets the index of the rank-th occurrence of the given character.
+    ///
+    /// @param character A character to search for.
+    /// @param rank The desired rank of the character.
+    /// @return An index i, such that `access(i) == c` and `rank(c, i) == rank`.
+    ///
+    int select(int character, int rank);
 
     void process_back_pointers_heuristic();
 
@@ -75,6 +116,11 @@ class BlockTree {
     /// @brief Actually build the block tree and insert back-links for repeated blocks.
     ///
     void process_block_tree();
+
+    ///
+    /// @brief For each block in the tree, replace unnecessary internal blocks with back blocks where possible. See also
+    /// the `InternalBlock` documentation.
+    ///
     void clean_unnecessary_expansions();
 
   private:
