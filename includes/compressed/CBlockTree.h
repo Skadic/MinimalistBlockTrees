@@ -10,13 +10,18 @@
 
 class CBlockTree {
   public:
-    int  arity_; // Arity
-    int  root_arity_;
-    int  lowest_level_block_length_;
-    int  number_of_levels_;
+    /// This arity of each block in this tree, except for the root node.
+    int arity_;
+    /// The root block's arity.
+    int root_arity_;
+    /// The block size of the blocks in the lowest complete level of this tree.
+    int lowest_complete_level_block_size_;
+    /// The number of levels in this tree.
+    int number_of_levels_;
+    /// Whether this tree is built with rank select support.
     bool rank_select_support_;
 
-    /// @brief For each level l, stores a bitvector B,
+    /// For each level l, stores a bitvector B,
     /// where B[j] == 1 if the block at index j on level l is an internal block
     /// This maps level -> block index -> is internal
     std::vector<sdsl::bit_vector *>        is_internal_;
@@ -32,13 +37,13 @@ class CBlockTree {
     sdsl::int_vector<>           *alphabet_;
     std::unordered_map<char, int> mapping_;
 
-    /// @brief For the lowest level of the tree, saves the ranks up to (and not including) a specific block for each
-    /// character This maps character -> block index -> rank
-    std::unordered_map<int, sdsl::int_vector<> *> lowest_complete_level_prefix_ranks_;
+    /// @brief For the lowest complete level (i.e. with no blocks missing) of the tree, saves the ranks up to (and not
+    /// including) a specific block for each character This maps character -> block index -> rank
+    std::unordered_map<int, sdsl::int_vector<> *> lowest_complete_level_ranks_;
 
-    /// @brief For the lowest level this stores the ranks of this character inside the current block
-    /// This maps character -> block index -> rank
-    std::unordered_map<int, std::vector<sdsl::int_vector<> *>> block_ranks_;
+    /// @brief This stores the number of times a character appears inside of each of the tree's blocks.
+    /// This maps character -> level -> block index -> pop count
+    std::unordered_map<int, std::vector<sdsl::int_vector<> *>> pop_counts_;
     std::unordered_map<int, std::vector<sdsl::int_vector<> *>> bt_second_ranks_;
 
     CBlockTree(BlockTree *source_tree);

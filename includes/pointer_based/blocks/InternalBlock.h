@@ -17,7 +17,7 @@ class InternalBlock : public Block {
     /// @param end_index Ths block's start index in the source.
     /// @param source The source string.
     ///
-    InternalBlock(Block *parent, int64_t start_index, int64_t end_index, std::string &source);
+    InternalBlock(Block *parent, int64_t start_index, int64_t end_index, const std::string &source);
     ~InternalBlock();
 
     ///
@@ -39,7 +39,7 @@ class InternalBlock : public Block {
     ///
     /// @return false
     ///
-    bool is_leaf();
+    bool is_leaf() const;
 
     ///
     /// @brief Accesses the given index.
@@ -47,7 +47,7 @@ class InternalBlock : public Block {
     /// @param i An index
     /// @return The character at index i in the source string.
     ///
-    int access(int i);
+    int access(const int i) const;
 
     ///
     /// @brief Add support for `rank` and `select` to this block, for the given character.
@@ -55,7 +55,7 @@ class InternalBlock : public Block {
     /// @param character A character to add rank select support for.
     /// @return The number of times this character exists in this block.
     ///
-    int add_rank_select_support(int character);
+    int add_rank_select_support(const int character);
 
     ///
     /// @brief A rank query on this block for a given character.
@@ -66,7 +66,7 @@ class InternalBlock : public Block {
     /// @param i An index
     /// @return The number of times the character occurs up to and including the given index.
     ///
-    int rank(int character, int i);
+    int rank(const int character, const int i) const;
 
     ///
     /// @brief A select query on this block for a given character.
@@ -77,7 +77,7 @@ class InternalBlock : public Block {
     /// @param rank The rank of the character to look for
     /// @return The position of the rank-th occurrence of the given character
     ///
-    int select(int character, int rank);
+    int select(const int character, const int rank) const;
 };
 
 #endif // BLOCKTREE_PLAZYINTERNALBLOCK_H

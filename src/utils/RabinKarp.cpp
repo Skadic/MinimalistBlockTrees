@@ -1,6 +1,6 @@
 #include "../../includes/blocktree.utils/RabinKarp.h"
 
-RabinKarp::RabinKarp(std::string &s, int start_index, int window_size, int range, int sigma) :
+RabinKarp::RabinKarp(const std::string &s, const int start_index, const int window_size, const int range, const int sigma) :
     sigma_(sigma),
     window_size_(window_size),
     s_(s),
@@ -18,7 +18,7 @@ RabinKarp::RabinKarp(std::string &s, int start_index, int window_size, int range
     }
 }
 
-uint64_t RabinKarp::hash() { return hash_; }
+uint64_t RabinKarp::hash() const { return hash_; }
 
 void RabinKarp::next() {
     // Calculate the next hash value

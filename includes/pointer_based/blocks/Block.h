@@ -20,7 +20,7 @@ class Block {
     int64_t end_index_;
 
     /// The string this block tree is built from
-    std::string &source_;
+    const std::string &source_;
 
     /// Maps a character to the number of times it appears in this block
     std::unordered_map<int, int> ranks_;
@@ -65,7 +65,7 @@ class Block {
     /// @param end_index Ths block's start index in the source.
     /// @param source The source string.
     ///
-    Block(Block *parent, int64_t start_index, int64_t end_index, std::string &source);
+    Block(Block *parent, int64_t start_index, int64_t end_index, const std::string &source);
     virtual ~Block();
 
     ///
@@ -74,7 +74,7 @@ class Block {
     /// @return The number of characters this block spans.
     ///
     int64_t     length() const;
-    std::string represented_string();
+    std::string represented_string() const;
 
     ///
     /// @brief Add support for `rank` and `select` to this block, for the given character.
@@ -82,7 +82,7 @@ class Block {
     /// @param character A character to add rank select support for.
     /// @return The number of times this character exists in this block.
     ///
-    virtual int add_rank_select_support(int character);
+    virtual int add_rank_select_support(const int character);
 
     ///
     /// @brief Accesses the given index.
@@ -90,7 +90,7 @@ class Block {
     /// @param i An index
     /// @return The character at index i in the source string.
     ///
-    virtual int access(int i);
+    virtual int access(const int i) const;
 
     ///
     /// @brief A rank query on this block for a given character.
@@ -101,7 +101,7 @@ class Block {
     /// @param i An index
     /// @return The number of times the character occurs up to and including the given index.
     ///
-    virtual int rank(int character, int i);
+    virtual int rank(const int character, const int i) const;
 
     ///
     /// @brief A select query on this block for a given character.
@@ -112,7 +112,7 @@ class Block {
     /// @param rank The rank of the character to look for
     /// @return The position of the rank-th occurrence of the given character
     ///
-    virtual int select(int character, int rank);
+    virtual int select(const int character, const int rank) const;
 
     ///
     /// @brief Returns this block's children.
@@ -120,7 +120,7 @@ class Block {
     /// @param leaf_length The tree's leaf length
     /// @param arity This block's arity
     ///
-    virtual std::vector<Block *> &children(int leaf_length, int arity);
+    virtual std::vector<Block *> &children(const int leaf_length, const int arity);
 
     ///
     /// @brief If an internal block has only leaves as its children, no other blocks are pointing to it and this block
@@ -141,7 +141,7 @@ class Block {
     ///
     /// @return true, if this block is a leaf block *or* a back block, false if it is an internal block.
     ///
-    virtual bool is_leaf();
+    virtual bool is_leaf() const;
 };
 
 #endif // BLOCKTREE_PBLOCK_H

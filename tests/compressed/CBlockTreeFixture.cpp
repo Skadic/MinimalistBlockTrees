@@ -258,7 +258,7 @@ TEST_P(CBlockTreeFixture, bt_bv_ranks_prefix_check) {
     for (auto pair : characters_) {
         int c = pair.first;
         level = iterator[i];
-        auto level_bt_ranks = *(c_block_tree_rs_->block_ranks_[c][0]);
+        auto level_bt_ranks = *(c_block_tree_rs_->pop_counts_[c][0]);
         EXPECT_EQ(level.size(), level_bt_ranks.size());
 
         for (int k = 0; k < level.size(); ++k) {
@@ -272,7 +272,7 @@ TEST_P(CBlockTreeFixture, bt_bv_ranks_prefix_check) {
         for (auto pair : characters_) {
             int c = pair.first;
             level = iterator[i + j];
-            auto level_bt_ranks = *(c_block_tree_rs_->block_ranks_[c][j]);
+            auto level_bt_ranks = *(c_block_tree_rs_->pop_counts_[c][j]);
             EXPECT_EQ(level.size(), level_bt_ranks.size());
 
             for (int k = 0; k < level.size(); ++k) {
@@ -305,7 +305,7 @@ TEST_P(CBlockTreeFixture, bt_bv_first_level_prefix_ranks_check) {
     for (auto pair : characters_) {
         int c = pair.first;
         level = iterator[i];
-        auto first_level_bt_prefix_ranks = *(c_block_tree_rs_->lowest_complete_level_prefix_ranks_[c]);
+        auto first_level_bt_prefix_ranks = *(c_block_tree_rs_->lowest_complete_level_ranks_[c]);
         int r  = 0;
 
         EXPECT_EQ(first_level_bt_prefix_ranks.size(), level.size());

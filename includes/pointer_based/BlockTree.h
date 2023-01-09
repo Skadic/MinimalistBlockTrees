@@ -28,7 +28,7 @@ class BlockTree {
     /// @param N A large prime number
     /// @param hashtable A hashtable mapping a Rabin-Karp-hashed string to all blocks that match its hash.
     ///
-    void hash_blocks(Level &level, int N, BlockMap &hashtable);
+    void hash_blocks(const Level &level, const int N, BlockMap &hashtable) const;
 
     ///
     /// @brief Scans through this level with a window of two blocks, hashes the represented string for each block pair
@@ -40,17 +40,17 @@ class BlockTree {
     /// @param N A large prime number
     /// @param hashtable A hashtable mapping a Rabin-Karp-hashed string to all block pairs that match its hash.
     ///
-    void hash_block_pairs(Level &level, int N, BlockPairMap &hashtable);
+    void hash_block_pairs(const Level &level, const int N, BlockPairMap &hashtable) const;
 
   public:
     /// This tree's arity (except for the root node)
-    int arity_;
+    const int arity_;
     /// The root node's arity
-    int root_arity_;
+    const int root_arity_;
     /// The maximum length of a leaf node.
-    int leaf_length_;
+    const int leaf_length_;
     /// Input sequence of the Tree
-    std::string input_;
+    const std::string input_;
     /// The root block
     Block *root_block_;
     /// Whether this tree is built with rank and select support
@@ -69,12 +69,12 @@ class BlockTree {
     /// @param rank_select_support Whether to build this block tree with rank/select support. This can be manually donw
     /// by calling `add_rank_select_support` for every desired character.
     ///
-    BlockTree(std::string &source,
-              int          arity,
-              int          root_block_arity,
-              int          leaf_length,
-              bool         process_block_tree  = false,
-              bool         rank_select_support = false);
+    BlockTree(const std::string &source,
+              const int          arity,
+              const int          root_block_arity,
+              const int          leaf_length,
+              const bool         process_block_tree  = false,
+              const bool         rank_select_support = false);
     ~BlockTree();
 
     ///
@@ -83,14 +83,14 @@ class BlockTree {
     /// @param index An index in the source text.
     /// @return The character at the given index in the source text.
     ///
-    int access(int index);
+    int access(const int index) const;
 
     ///
     /// @brief Adds support for rank and select queries to this block tree.
     ///
     /// @param character The character for which to add the rank and select support.
     ///
-    void add_rank_select_support(int character);
+    void add_rank_select_support(const int character);
 
     ///
     /// @brief Gets the number the given character's occurrences up to an index.
@@ -99,7 +99,7 @@ class BlockTree {
     /// @param index The index up to which occurences are counted.
     /// @return The number of times the character appears up to this index.
     ///
-    int rank(int character, int index);
+    int rank(const int character, const int index) const;
 
     ///
     /// @brief Gets the index of the rank-th occurrence of the given character.
@@ -108,7 +108,7 @@ class BlockTree {
     /// @param rank The desired rank of the character.
     /// @return An index i, such that `access(i) == c` and `rank(c, i) == rank`.
     ///
-    int select(int character, int rank);
+    int select(const int character, const int rank) const;
 
     void process_back_pointers_heuristic();
 
@@ -150,7 +150,7 @@ class BlockTree {
     /// @param N A large prime number
     /// @param hashtable A hashtable mapping a Rabin-Karp-Hashed string to all blocks that match its hash.
     ///
-    void window_block_scan(Level &level, int window_size, int N, BlockMap &hashtable);
+    void window_block_scan(const Level &level, const int window_size, const int N, BlockMap &hashtable) const;
 
     ///
     /// @brief Scan for occurrences of strings (of size window_size) that also exist in the hashtable
@@ -170,7 +170,7 @@ class BlockTree {
     /// @param N A large prime number
     /// @param hashtable A hashtable mapping a Rabin-Karp-Hashed string to all pairs of blocks that match its hash.
     ///
-    void window_block_pair_scan(Level &level, int pair_window_size, int N, BlockPairMap &pair_hashtable);
+    void window_block_pair_scan(const Level &level, const int pair_window_size, const int N, BlockPairMap &pair_hashtable) const;
 
     ///
     /// @brief Create back blocks from the information saved in the blocks on the given level.
@@ -191,7 +191,7 @@ class BlockTree {
     ///
     /// @param level A vector of pointers to blocks whose children to return.
     ///
-    Level next_level(Level &level);
+    Level next_level(const Level &level) const;
 
     /// @brief Returns a vector of levels of blocks of the tree where each level is represented by a vector of its
     /// blocks (left-to-right).
@@ -200,7 +200,7 @@ class BlockTree {
     ///     for (std::vector<Block*> level : bt->levelwise_iterator()) {
     ///         for (Block* b : level) {
     ///             ...
-    std::vector<Level> levelwise_iterator();
+    std::vector<Level> levelwise_iterator() const;
 
     ///
     /// @brief Prints this blocktree to the console

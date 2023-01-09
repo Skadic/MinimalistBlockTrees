@@ -16,7 +16,7 @@ class LeafBlock : public Block {
     /// @param end_index This block's (inclusive) end index in the source.
     /// @param source The source string.
     ///
-    LeafBlock(Block *parent, int64_t start_index, int64_t end_index, std::string &source);
+    LeafBlock(Block *parent, int64_t start_index, int64_t end_index, const std::string &source);
     ~LeafBlock();
 
     ///
@@ -25,15 +25,14 @@ class LeafBlock : public Block {
     /// @param character A character to add rank select support for.
     /// @return The number of times this character exists in this block.
     ///
-    int     add_rank_select_support(int character);
+    int add_rank_select_support(const int character);
 
-    
     ///
     /// @brief Returns this block's size.
     ///
     /// @return The number of characters this block spans.
     ///
-    int64_t size();
+    int64_t size() const;
 
     ///
     /// @brief A rank query on this block for a given character.
@@ -44,7 +43,7 @@ class LeafBlock : public Block {
     /// @param i An index
     /// @return The number of times the character occurs up to and including the given index.
     ///
-    int rank(int character, int i);
+    int rank(const int character, const int i) const;
 
     ///
     /// @brief A select query on this block for a given character.
@@ -55,7 +54,7 @@ class LeafBlock : public Block {
     /// @param rank The rank of the character to look for
     /// @return The position of the rank-th occurrence of the given character
     ///
-    int select(int character, int rank);
+    int select(const int character, const int rank) const;
 
     ///
     /// @brief Accesses the given index.
@@ -63,7 +62,7 @@ class LeafBlock : public Block {
     /// @param i An index
     /// @return The character at index i in the source string.
     ///
-    int access(int);
+    int access(const int i) const;
 };
 
 #endif // BLOCKTREE_PLEAVEBLOCK_H

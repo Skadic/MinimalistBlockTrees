@@ -5,7 +5,7 @@
 #include <pointer_based/blocks/LeafBlock.h>
 #include <ranges>
 
-InternalBlock::InternalBlock(Block *parent, int64_t start_index, int64_t end_index, std::string &source) :
+InternalBlock::InternalBlock(Block *parent, int64_t start_index, int64_t end_index, const std::string &source) :
     Block(parent, start_index, end_index, source) {}
 
 InternalBlock::~InternalBlock() {
@@ -24,7 +24,7 @@ int InternalBlock::add_rank_select_support(int character) {
     return ranks_[character];
 }
 
-int InternalBlock::rank(int character, int i) {
+int InternalBlock::rank(const int character, const int i) const {
     // The cumulative length of the string up to the current child
     int cumulative_length = 0;
     // The number of times the character appeared up to the current child
@@ -41,7 +41,7 @@ int InternalBlock::rank(int character, int i) {
     return 0;
 }
 
-int InternalBlock::select(int character, int rank) {
+int InternalBlock::select(const int character, const int rank) const {
     // The cumulative length of the string up to the current child
     int cumulative_length = 0;
     // The number of times the character appeared up to the current child
@@ -112,9 +112,9 @@ void InternalBlock::clean_unnecessary_expansions() {
     }
 }
 
-bool InternalBlock::is_leaf() { return false; }
+bool InternalBlock::is_leaf() const { return false; }
 
-int InternalBlock::access(int i) {
+int InternalBlock::access(const int i) const {
     // The cumulative length of the string up to the current child
     int cumulative_length = 0;
     for (Block *child : children_) {

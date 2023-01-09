@@ -38,14 +38,14 @@ class RabinKarp {
     /// @param range The value that the fingerprints are limited to. This should be a large prime number.
     /// @param sigma The alphabet size
     ///
-    RabinKarp(std::string &s, int start_index, int window_size, int range, int sigma = 257);
+    RabinKarp(const std::string &s, const int start_index, const int window_size, const int range, const int sigma = 257);
 
     ///
     /// @brief Get the current hash value.
     ///
     /// @return The hash value of the string at index current_index_ with length window_size_.
     ///
-    uint64_t hash();
+    uint64_t hash() const;
 
     ///
     /// @brief Shifts the index to the left by one and calculates that string's hash value.

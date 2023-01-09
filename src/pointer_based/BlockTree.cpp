@@ -14,12 +14,12 @@ using Level        = BlockTree::Level;
 using BlockMap     = BlockTree::BlockMap;
 using BlockPairMap = BlockTree::BlockPairMap;
 
-BlockTree::BlockTree(std::string &input,
-                     int          arity,
-                     int          root_block_arity,
-                     int          leaf_length,
-                     bool         process_block_tree,
-                     bool         rs_support) :
+BlockTree::BlockTree(const std::string &input,
+                     const int          arity,
+                     const int          root_block_arity,
+                     const int          leaf_length,
+                     const bool         process_block_tree,
+                     const bool         rs_support) :
     arity_(arity),
     root_arity_(root_block_arity),
     input_(input),
@@ -73,11 +73,11 @@ BlockTree::~BlockTree() { delete root_block_; }
 
 void BlockTree::add_rank_select_support(int c) { root_block_->add_rank_select_support(c); }
 
-int BlockTree::rank(int c, int i) { return root_block_->rank(c, i); }
+int BlockTree::rank(const int c, const int i) const { return root_block_->rank(c, i); }
 
-int BlockTree::select(int c, int j) { return root_block_->select(c, j); }
+int BlockTree::select(const int c, const int j) const { return root_block_->select(c, j); }
 
-std::vector<Level> BlockTree::levelwise_iterator() {
+std::vector<Level> BlockTree::levelwise_iterator() const {
     // The initial state is just the root level
     std::vector<Level> result = {{root_block_}};
 
@@ -111,9 +111,9 @@ void BlockTree::clean_unnecessary_expansions() {
     }
 }
 
-int BlockTree::access(int i) { return root_block_->access(i); }
+int BlockTree::access(const int i) const { return root_block_->access(i); }
 
-Level BlockTree::next_level(Level &level) {
+Level BlockTree::next_level(const Level &level) const {
     // The arity of the current level. If we're at the root, then the arity is of course the root arity.
     const auto block_arity = (level.size() == 1 && level[0] == root_block_) ? root_arity_ : arity_;
 
@@ -140,7 +140,7 @@ inline bool blocks_adjacent(const Block *left, const Block *right) {
     return left->end_index_ == right->start_index_ - 1;
 }
 
-void BlockTree::window_block_pair_scan(Level &level, int pair_window_size, int N, BlockPairMap &pair_hashtable) {
+void BlockTree::window_block_pair_scan(const Level &level, const int pair_window_size, const int N, BlockPairMap &pair_hashtable) const {
     // Iterate through all blocks on this level
     // Each iteration of this for loop will start at a segment on this level which consists of blocks that appear
     // contiguously in the input
@@ -200,7 +200,7 @@ void BlockTree::window_block_pair_scan(Level &level, int pair_window_size, int N
     }
 }
 
-void BlockTree::window_block_scan(Level &level, int window_size, int N, BlockMap &hashtable) {
+void BlockTree::window_block_scan(const Level &level, const int window_size, const int N, BlockMap &hashtable) const {
     // The current block index inside this level
     int i = 0;
     // Iterate through all blocks on this level
@@ -259,7 +259,7 @@ void BlockTree::window_block_scan(Level &level, int window_size, int N, BlockMap
     }
 }
 
-void BlockTree::hash_blocks(Level &level, int N, BlockMap &hashtable) {
+void BlockTree::hash_blocks(const Level &level, const int N, BlockMap &hashtable) const {
     // For every block in this level, calculate its fingerprint and insert it into the hashtable
     for (Block *b : level) {
         RabinKarp  rk(input_, b->start_index_, b->length(), N);
@@ -275,7 +275,7 @@ void BlockTree::hash_blocks(Level &level, int N, BlockMap &hashtable) {
     }
 }
 
-void BlockTree::hash_block_pairs(Level &level, int N, BlockPairMap &pair_hashtable) {
+void BlockTree::hash_block_pairs(const Level &level, const int N, BlockPairMap &pair_hashtable) const {
     for (auto it = level.begin(); it != level.end();) {
         // For every contiguous segment of blocks hash two neighboring blocks and add the block pair to the hashtable
         // with the hashed string as their key

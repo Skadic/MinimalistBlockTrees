@@ -1,12 +1,12 @@
 #include <pointer_based/blocks/BackBlock.h>
 
-BackBlock::BackBlock(Block       *parent,
-                     int64_t      start_index,
-                     int64_t      end_index,
-                     std::string &source,
-                     Block       *first_block,
-                     Block       *second_block,
-                     int          offset) :
+BackBlock::BackBlock(Block             *parent,
+                     int64_t            start_index,
+                     int64_t            end_index,
+                     const std::string &source,
+                     Block             *first_block,
+                     Block             *second_block,
+                     int                offset) :
     Block(parent, start_index, end_index, source) {
     first_block_ = first_block;
     if (second_block != nullptr) {
@@ -34,7 +34,7 @@ BackBlock::~BackBlock() {
     }
 }
 
-int BackBlock::add_rank_select_support(int c) {
+int BackBlock::add_rank_select_support(const int c) {
     int first_rank   = first_block_->rank(c, offset_ - 1);
     int second_rank  = (second_block_ == nullptr) ? first_block_->rank(c, offset_ + length() - 1) - first_rank
                                                   : first_block_->rank(c, first_block_->length() - 1) - first_rank;
@@ -45,21 +45,22 @@ int BackBlock::add_rank_select_support(int c) {
     return ranks_[c];
 }
 
-int BackBlock::rank(int c, int i) {
+int BackBlock::rank(const int c, const int i) const {
     if (i + offset_ >= first_block_->length()) {
-        return second_ranks_[c] + second_block_->rank(c, offset_ + i - first_block_->length()); // Loop if it's itself
+        return second_ranks_.at(c) +
+               second_block_->rank(c, offset_ + i - first_block_->length()); // Loop if it's itself
     }
-    return first_block_->rank(c, i + offset_) - (first_block_->ranks_[c] - second_ranks_[c]);
+    return first_block_->rank(c, i + offset_) - (first_block_->ranks_[c] - second_ranks_.at(c));
 }
 
-int BackBlock::select(int c, int j) {
-    if (j > second_ranks_[c]) {
-        return second_block_->select(c, j - second_ranks_[c]) + first_block_->length() - offset_;
+int BackBlock::select(const int c, const int j) const {
+    if (j > second_ranks_.at(c)) {
+        return second_block_->select(c, j - second_ranks_.at(c)) + first_block_->length() - offset_;
     }
-    return first_block_->select(c, j + first_block_->ranks_[c] - second_ranks_[c]) - offset_;
+    return first_block_->select(c, j + first_block_->ranks_[c] - second_ranks_.at(c)) - offset_;
 }
 
-int BackBlock::access(int i) {
+int BackBlock::access(const int i) const {
     if (i + offset_ >= first_block_->length()) {
         return second_block_->access(offset_ + i - first_block_->length());
     }
