@@ -167,7 +167,7 @@ TEST_P(CBlockTreeFixture, bt_offsets_field_check) {
 
     for (int j = 0; j < c_block_tree_->number_of_levels_-1; ++j) {
         level = iterator[i+j];
-        auto level_bt_offsets = *(c_block_tree_->bt_offsets_[j]);
+        auto level_bt_offsets = *(c_block_tree_->offsets_[j]);
 
         int max_size_level = level.front()->length();
         int l = 0;
@@ -224,7 +224,7 @@ TEST_P(CBlockTreeFixture, bt_second_ranks_field_check) {
         level = iterator[i+j];
         for (auto pair : characters_) {
             int c = pair.first;
-            auto level_bt_second_ranks = *(c_block_tree_rs_->bt_second_ranks_[c][j]);
+            auto level_bt_second_ranks = *(c_block_tree_rs_->first_block_pop_counts_[c][j]);
 
             int l = 0;
             for (Block *b: level) {
