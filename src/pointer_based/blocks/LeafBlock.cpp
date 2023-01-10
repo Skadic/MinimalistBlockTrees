@@ -11,8 +11,8 @@ int64_t LeafBlock::size() const {
 }
 
 int LeafBlock::add_rank_select_support(int c) {
-    ranks_[c] = rank(c, size() - 1);
-    return ranks_[c];
+    pop_counts_[c] = rank(c, size() - 1);
+    return pop_counts_[c];
 }
 
 int LeafBlock::rank(const int c, const int i) const {

@@ -23,16 +23,20 @@ class Block {
     const std::string &source_;
 
     /// Maps a character to the number of times it appears in this block
-    std::unordered_map<int, int> ranks_;
+    std::unordered_map<int, int> pop_counts_;
 
-    /// TODO Idek
-    std::unordered_map<int, int> second_ranks_;
+    /// This is a `BackBlock`-specific field. `BackBlock`s point to a source to the left of them from which they copy
+    /// characters. This source which may span one or two blocks. This stores how many times character c appears in the
+    /// part of the source that lies in the *first block* it copies from.
+    std::unordered_map<int, int> pop_counts_in_first_block_;
 
     /// The first block of this block's source (if this is a back block)
     Block *first_block_;
+
     /// The second block of this block's source (if this is a back block).
     /// This is only populated if the source is at an offset where the source does not fit into only first_block
     Block *second_block_;
+
     /// The offset at which this block's source starts in its first_block
     int offset_;
 
@@ -73,7 +77,11 @@ class Block {
     ///
     /// @return The number of characters this block spans.
     ///
-    int64_t     length() const;
+    int64_t length() const;
+
+    ///
+    /// @brief Returns a copy of the segment of the string which this block represents.
+    ///
     std::string represented_string() const;
 
     ///

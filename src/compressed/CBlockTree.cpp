@@ -44,7 +44,7 @@ void populate_lowest_complete_level_ranks(CBlockTree *cbt, const Level &lowest_c
 
     // Iterate through the rank values for the first block to see which characters actually exist in the blocks and
     // create a new empty ranks vector for each of them The new rank vectors are used for the compressed block tree
-    for (const auto &[character, _] : lowest_complete_level[0]->ranks_) {
+    for (const auto &[character, _] : lowest_complete_level[0]->pop_counts_) {
         cbt->lowest_complete_level_ranks_[character] = new sdsl::int_vector<>(lowest_complete_level.size());
         cbt->pop_counts_[character].push_back(new sdsl::int_vector<>(lowest_complete_level.size()));
     }
@@ -60,13 +60,13 @@ void populate_lowest_complete_level_ranks(CBlockTree *cbt, const Level &lowest_c
         }
 
         // Lookup the ranks for each character inside the current block
-        for (const auto &[character, _] : lowest_complete_level[block_index]->ranks_) {
+        for (const auto &[character, _] : lowest_complete_level[block_index]->pop_counts_) {
             // Set the ranks of this character for the current block
-            (*cbt->pop_counts_[character][0])[block_index] = lowest_complete_level[block_index]->ranks_[character];
+            (*cbt->pop_counts_[character][0])[block_index] = lowest_complete_level[block_index]->pop_counts_[character];
             // Store the cumulative ranks before this block into the temporary map
             // This will be the prefix ranks value for the *next* block (since we only want to cound the ranks *before*)
             // each block
-            current_prefix_ranks[character] += lowest_complete_level[block_index]->ranks_[character];
+            current_prefix_ranks[character] += lowest_complete_level[block_index]->pop_counts_[character];
         }
     }
 
@@ -93,13 +93,13 @@ void populate_level_pop_counts(CBlockTree *cbt, const Level &level) {
     // We are pushing the new int vector onto the vector containing all intvectors
     // That means that from now on the last element (.back()) for each character is the one we need to worry about for
     // this level
-    for (auto &[character, _] : level[0]->ranks_) {
+    for (auto &[character, _] : level[0]->pop_counts_) {
         cbt->pop_counts_[character].push_back(new sdsl::int_vector<>(level.size()));
     }
 
     // Populate the pop count map with the ranks of the characters inside each block of the current level
     for (int i = 0; i < level.size(); ++i) {
-        for (auto &[character, rank] : level[i]->ranks_) {
+        for (auto &[character, rank] : level[i]->pop_counts_) {
             (*cbt->pop_counts_[character].back())[i] = rank;
         }
     }
@@ -184,7 +184,8 @@ CBlockTree::CBlockTree(BlockTree *bt) :
         sdsl::int_vector<>                           *current_level_offsets = new sdsl::int_vector<>(number_of_leaves);
         std::unordered_map<int, sdsl::int_vector<> *> current_level_second_ranks;
 
-        for (const auto [character, _] : current_level[0]->ranks_) {
+        // For every character that exists create a new int vector to store the second ranks
+        for (const auto [character, _] : current_level[0]->pop_counts_) {
             current_level_second_ranks[character] = new sdsl::int_vector<>(number_of_leaves);
         }
 
@@ -197,7 +198,7 @@ CBlockTree::CBlockTree(BlockTree *bt) :
                 // This is now the j-th non-internal block on this level
                 // Go through the block's "second_rank" for each character
                 // and populate the pre-allocated int vectors with it
-                for (auto &[character, second_rank] : current_level[i]->second_ranks_) {
+                for (auto &[character, second_rank] : current_level[i]->pop_counts_in_first_block_) {
                     (*current_level_second_ranks[character])[j] = second_rank;
                 }
 
@@ -225,7 +226,7 @@ CBlockTree::CBlockTree(BlockTree *bt) :
 
     ++number_of_levels_;
 
-    std::vector<Block *> last_level = current_level;
+    Level last_level = current_level;
 
     std::string leaf_string = "";
     for (Block *b : last_level) {

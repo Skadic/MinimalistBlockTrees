@@ -330,12 +330,12 @@ TEST_P(BlockTreeBasicPropertiesFixture, ranks_field_check) {
     for (std::vector<Block*> level : block_tree_rs_->levelwise_iterator()) {
         for (Block *b: level) {
             std::unordered_map<int, int> ranks;
-            for (auto pair: b->ranks_)
+            for (auto pair: b->pop_counts_)
                 ranks[pair.first] = 0;
             for (int i = b->start_index_; i <= b->end_index_ && i < input_.size(); ++i)
                 ranks[input_[i]] = ranks[input_[i]] + 1;
             for (auto pair : ranks)
-                EXPECT_EQ(ranks[pair.first], b->ranks_[pair.first]);
+                EXPECT_EQ(ranks[pair.first], b->pop_counts_[pair.first]);
         }
     }
 }
@@ -347,7 +347,7 @@ TEST_P(BlockTreeBasicPropertiesFixture, second_ranks_field_check) {
             if (dynamic_cast<BackBlock*>(b)) {
                 std::unordered_map<int,int> first_ranks;
                 std::unordered_map<int,int> second_ranks;
-                for (auto pair: b->second_ranks_)
+                for (auto pair: b->pop_counts_in_first_block_)
                     second_ranks[pair.second] = 0;
                 int i = b->first_block_->start_index_;
                 for (; i < b->first_block_->start_index_ +  b->offset_; ++i)
@@ -356,7 +356,7 @@ TEST_P(BlockTreeBasicPropertiesFixture, second_ranks_field_check) {
                     second_ranks[input_[i]] = second_ranks[input_[i]] + 1;
 
                 for (auto pair: second_ranks)
-                    EXPECT_EQ(second_ranks[pair.first], b->second_ranks_[pair.first]);
+                    EXPECT_EQ(second_ranks[pair.first], b->pop_counts_in_first_block_[pair.first]);
             }
         }
     }

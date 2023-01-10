@@ -20,8 +20,8 @@ int InternalBlock::add_rank_select_support(int character) {
     for (Block *child : children_) {
         cumulative_count += child->add_rank_select_support(character);
     }
-    ranks_[character] = cumulative_count;
-    return ranks_[character];
+    pop_counts_[character] = cumulative_count;
+    return pop_counts_[character];
 }
 
 int InternalBlock::rank(const int character, const int i) const {
@@ -36,7 +36,7 @@ int InternalBlock::rank(const int character, const int i) const {
             return cumulative_count + child->rank(character, i - (cumulative_length - child->length()));
         }
         // If it is not inside the child then read the pre-calculated rank from the child
-        cumulative_count += child->ranks_[character];
+        cumulative_count += child->pop_counts_[character];
     }
     return 0;
 }
@@ -51,13 +51,13 @@ int InternalBlock::select(const int character, const int rank) const {
             // If this is the last child, we try to find it in that child
             return cumulative_length + (*it)->select(character, rank - cumulative_count);
         }
-        if (cumulative_count + (*it)->ranks_[character] >= rank) {
+        if (cumulative_count + (*it)->pop_counts_[character] >= rank) {
             // if including the number of times 'character' appears is more than we want, then the character we are
             // looking for is in this child
             return cumulative_length + (*it)->select(character, rank - cumulative_count);
         }
         // Otherwise, update the variables and go to the next child
-        cumulative_count += (*it)->ranks_[character];
+        cumulative_count += (*it)->pop_counts_[character];
         cumulative_length += (*it)->length();
     }
     return -1;

@@ -22,10 +22,10 @@ CBitBlockTree::CBitBlockTree(BlockTree *bt, int one_symbol) : arity_(bt->arity_)
     for (int i = 0; i < first_level.size(); ++i) {
         (*first_level_prefix_ranks)[i] = first_level_prefix_ranks_;
 
-        for (auto pair : first_level[i]->ranks_) {
+        for (auto pair : first_level[i]->pop_counts_) {
             if (pair.first == one_symbol) {
-                (*first_level_ranks)[i]   = first_level[i]->ranks_[pair.first];
-                first_level_prefix_ranks_ = first_level_prefix_ranks_ + first_level[i]->ranks_[pair.first];
+                (*first_level_ranks)[i]   = first_level[i]->pop_counts_[pair.first];
+                first_level_prefix_ranks_ = first_level_prefix_ranks_ + first_level[i]->pop_counts_[pair.first];
             }
         }
     }
@@ -61,7 +61,7 @@ CBitBlockTree::CBitBlockTree(BlockTree *bt, int one_symbol) : arity_(bt->arity_)
         }
 
         for (int i = 0; i < next_level.size(); ++i) {
-            for (auto pair : next_level[i]->ranks_) {
+            for (auto pair : next_level[i]->pop_counts_) {
                 if (pair.first == one_symbol) {
                     (*next_level_ranks)[i] = pair.second;
                 }
@@ -75,7 +75,7 @@ CBitBlockTree::CBitBlockTree(BlockTree *bt, int one_symbol) : arity_(bt->arity_)
         int j = 0;
         for (int i = 0; i < current_level.size(); ++i) {
             if (!(*current_level_bv)[i]) {
-                for (auto pair : current_level[i]->second_ranks_) {
+                for (auto pair : current_level[i]->pop_counts_in_first_block_) {
                     if (pair.first == one_symbol) {
                         (*current_level_second_ranks)[j] = pair.second;
                     }

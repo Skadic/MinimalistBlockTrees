@@ -229,7 +229,7 @@ TEST_P(CBlockTreeFixture, bt_second_ranks_field_check) {
             int l = 0;
             for (Block *b: level) {
                 if (dynamic_cast<BackBlock *>(b)) {
-                    EXPECT_EQ(level_bt_second_ranks[l], b->second_ranks_[c]) ;
+                    EXPECT_EQ(level_bt_second_ranks[l], b->pop_counts_in_first_block_[c]) ;
                     ++l;
                 }
             }
@@ -263,7 +263,7 @@ TEST_P(CBlockTreeFixture, bt_bv_ranks_prefix_check) {
 
         for (int k = 0; k < level.size(); ++k) {
             Block* b = level[k];
-            EXPECT_EQ(b->ranks_[c], level_bt_ranks[k]);
+            EXPECT_EQ(b->pop_counts_[c], level_bt_ranks[k]);
         }
     }
 
@@ -277,7 +277,7 @@ TEST_P(CBlockTreeFixture, bt_bv_ranks_prefix_check) {
 
             for (int k = 0; k < level.size(); ++k) {
                 Block* b = level[k];
-                EXPECT_EQ(b->ranks_[c], level_bt_ranks[k]);
+                EXPECT_EQ(b->pop_counts_[c], level_bt_ranks[k]);
             }
         }
     }
@@ -311,7 +311,7 @@ TEST_P(CBlockTreeFixture, bt_bv_first_level_prefix_ranks_check) {
         EXPECT_EQ(first_level_bt_prefix_ranks.size(), level.size());
         for (int k = 0; k < level.size(); ++k) {
             EXPECT_EQ(r, first_level_bt_prefix_ranks[k]);
-            r += level[k]->ranks_[c];
+            r += level[k]->pop_counts_[c];
         }
     }
 
