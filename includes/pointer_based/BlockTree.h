@@ -19,8 +19,8 @@ class BlockTree {
 
   private:
     ///
-    /// @brief Scans through this level's blocks, for each block hashes its represented string and inserts it into the
-    /// hashtable, mapping from the hashed string to all pairs of blocks that have the same hash.
+    /// @brief Scans through this level block by block. For each block, this hashes its represented string and inserts
+    /// it into the hashtable, mapping from the hashed string to all pairs of blocks that have the same hash.
     ///
     /// The hashes are Rabin-Karp fingerprints of the section of the input that the block spans.
     ///
@@ -31,8 +31,9 @@ class BlockTree {
     void hash_blocks(const Level &level, const int N, BlockMap &hashtable) const;
 
     ///
-    /// @brief Scans through this level with a window of two blocks, hashes the represented string for each block pair
-    /// and inserts it into a hashtable, mapping from the hashed string to all pairs of blocks that have the same hash.
+    /// @brief Scans through this level block by block with a window of two blocks. hashes the represented string for
+    /// each block pair and inserts it into a hashtable, mapping from the hashed string to all pairs of blocks that have
+    /// the same hash.
     ///
     /// The hashes are Rabin-Karp fingerprints of the section of the input that the block pair spans.
     ///
@@ -66,7 +67,7 @@ class BlockTree {
     /// constructing the tree.
     /// @param process_block_tree Whether to process the block tree immediately. Otherwise this can be manually done by
     /// calling `process_block_tree` and `clean_unnecessary_expansions` after.
-    /// @param rank_select_support Whether to build this block tree with rank/select support. This can be manually donw
+    /// @param rank_select_support Whether to build this block tree with rank/select support. This can be manually done
     /// by calling `add_rank_select_support` for every desired character.
     ///
     BlockTree(const std::string &source,
@@ -170,7 +171,10 @@ class BlockTree {
     /// @param N A large prime number
     /// @param hashtable A hashtable mapping a Rabin-Karp-Hashed string to all pairs of blocks that match its hash.
     ///
-    void window_block_pair_scan(const Level &level, const int pair_window_size, const int N, BlockPairMap &pair_hashtable) const;
+    void window_block_pair_scan(const Level  &level,
+                                const int     pair_window_size,
+                                const int     N,
+                                BlockPairMap &pair_hashtable) const;
 
     ///
     /// @brief Create back blocks from the information saved in the blocks on the given level.
