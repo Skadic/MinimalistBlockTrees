@@ -15,6 +15,8 @@ Block::Block(Block *parent, int64_t start_index, int64_t end_index, const std::s
 
 Block::~Block() {}
 
+void Block::add_fast_substring_support(int prefix_suffix_size) {}
+
 int Block::add_rank_select_support(int c) { return 0; }
 
 int Block::rank(const int c, const int i) const { return 0; }

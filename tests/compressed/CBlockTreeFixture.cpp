@@ -18,7 +18,7 @@ BlockTree* block_tree(int r, int root_arity, int max_leaf_length, std::string in
     return block_tree_;
 }
 
-BlockTree* block_tree_without_cleanning(int r, int root_arity, int max_leaf_length, std::string input) {
+BlockTree* block_tree_without_cleaning(int r, int root_arity, int max_leaf_length, std::string input) {
     BlockTree* block_tree_ = new BlockTree(input, r, root_arity, max_leaf_length);
     block_tree_->process_block_tree();
     return block_tree_;
@@ -96,7 +96,7 @@ INSTANTIATE_TEST_CASE_P(PCBlockTreeTest,
                                 Values(4),
                                 Values(8),
                                 Values("../../../tests/data/as", "../../../tests/data/dna", "../../../tests/data/dna.par", "../../../tests/data/einstein"),
-                                Values(&block_tree, &block_tree_without_cleanning, &heuristic_block_tree)));
+                                Values(&block_tree, &block_tree_without_cleaning, &heuristic_block_tree)));
 
 
 // This test checks if the fields and

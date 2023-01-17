@@ -1,9 +1,11 @@
 #include <algorithm>
+#include <iostream>
 #include <numeric>
 #include <pointer_based/blocks/BackBlock.h>
 #include <pointer_based/blocks/InternalBlock.h>
 #include <pointer_based/blocks/LeafBlock.h>
 #include <ranges>
+#include <string_view>
 
 InternalBlock::InternalBlock(Block *parent, int64_t start_index, int64_t end_index, const std::string &source) :
     Block(parent, start_index, end_index, source) {}
@@ -11,6 +13,31 @@ InternalBlock::InternalBlock(Block *parent, int64_t start_index, int64_t end_ind
 InternalBlock::~InternalBlock() {
     for (int i = children_.size() - 1; i >= 0; i--) {
         delete children_[i];
+    }
+}
+
+void InternalBlock::add_fast_substring_support(const int prefix_suffix_size) {
+    const size_t len = length();
+
+    // We aim to save the prefix and the suffix, each of size prefix_suffix_size.
+    // If this block is smaller than both of these together, then we might as well just save the string represented by
+    // this block, as it would be smaller
+    auto prefix_end = start_index_ + prefix_suffix_size > source_.length() ? source_.end() : source_.begin() + start_index_ + prefix_suffix_size;
+    auto suffix_end = end_index_ > source_.length() ? source_.end() : source_.begin() + end_index_ + 1;
+    if (len <= 2 * prefix_suffix_size) {
+        prefix_ = std::string_view(source_.begin() + start_index_, suffix_end);
+        suffix_ = std::string_view(source_.begin() + start_index_, suffix_end);
+        return;
+    }
+
+    // Insert the prefix
+    prefix_ = std::string_view(source_.begin() + start_index_, prefix_end);
+
+    // Insert the suffix
+    suffix_ = std::string_view(source_.begin() + end_index_ - prefix_suffix_size + 1, suffix_end);
+
+    for (Block *child : children_) {
+        child->add_fast_substring_support(prefix_suffix_size);
     }
 }
 

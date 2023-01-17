@@ -50,6 +50,13 @@ class InternalBlock : public Block {
     int access(const int i) const;
 
     ///
+    /// @brief Add support for fast substring queries.
+    ///
+    /// This populates the `prefix_suffix_` field.
+    ///
+    void add_fast_substring_support(int prefix_suffix_size);
+
+    ///
     /// @brief Add support for `rank` and `select` to this block, for the given character.
     ///
     /// @param character A character to add rank select support for.

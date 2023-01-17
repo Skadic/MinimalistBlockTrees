@@ -23,8 +23,7 @@ BlockTree::BlockTree(const std::string &input,
     arity_(arity),
     root_arity_(root_block_arity),
     input_(input),
-    leaf_length_(leaf_length),
-    rank_select_support_(rs_support) {
+    leaf_length_(leaf_length) {
 
     // If a leaf is supposed to be greater than the text, or if the arity is greater than the text is long, just make
     // the entire tree one leaf node
@@ -58,7 +57,7 @@ BlockTree::BlockTree(const std::string &input,
     }
 
     // Create rank-select support for all characters if desired
-    if (rank_select_support_) {
+    if (rs_support) {
         std::unordered_set<int> characters;
         for (char c : input) {
             characters.insert(c);
@@ -70,6 +69,8 @@ BlockTree::BlockTree(const std::string &input,
 }
 
 BlockTree::~BlockTree() { delete root_block_; }
+
+void BlockTree::add_fast_substring_support(const int prefix_suffix_size) { root_block_->add_fast_substring_support(prefix_suffix_size); }
 
 void BlockTree::add_rank_select_support(int c) { root_block_->add_rank_select_support(c); }
 
@@ -140,7 +141,10 @@ inline bool blocks_adjacent(const Block *left, const Block *right) {
     return left->end_index_ == right->start_index_ - 1;
 }
 
-void BlockTree::window_block_pair_scan(const Level &level, const int pair_window_size, const int N, BlockPairMap &pair_hashtable) const {
+void BlockTree::window_block_pair_scan(const Level  &level,
+                                       const int     pair_window_size,
+                                       const int     N,
+                                       BlockPairMap &pair_hashtable) const {
     // Iterate through all blocks on this level
     // Each iteration of this for loop will start at a segment on this level which consists of blocks that appear
     // contiguously in the input

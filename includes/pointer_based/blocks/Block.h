@@ -61,6 +61,16 @@ class Block {
     /// Pointers to this block's children
     std::vector<Block *> children_;
 
+    /// Needed for fast substring support. This stores the prefix of the string represented by this block
+    /// represented.
+    /// The size is given by the `prefix_suffix_size_` field in `BlockTree`.
+    std::string_view prefix_;
+
+    /// Needed for fast substring support. This stores the prefix of the string represented by this block
+    /// represented.
+    /// The size is given by the `prefix_suffix_size_` field in `BlockTree`.
+    std::string_view suffix_;
+
     ///
     /// @brief Create a new block.
     ///
@@ -91,6 +101,13 @@ class Block {
     /// @return The number of times this character exists in this block.
     ///
     virtual int add_rank_select_support(const int character);
+
+    ///
+    /// @brief Add support for fast substring queries.
+    ///
+    /// This populates the `prefix_suffix_` field.
+    ///
+    virtual void add_fast_substring_support(int prefix_suffix_size);
 
     ///
     /// @brief Accesses the given index.

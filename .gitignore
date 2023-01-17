@@ -7,5 +7,7 @@ compile_commands.json
 old_bt
 *.dec
 cmake-build-debug
+cmake-build-release
+cmake-build-relwithdebinfo
 build
 *.lzend

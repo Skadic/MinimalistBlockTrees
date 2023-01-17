@@ -166,10 +166,7 @@ std::pair<Offsets *, PopCounts> offsets_and_first_block_pop_counts(const Level  
     return {offsets, first_block_pop_counts};
 }
 
-CBlockTree::CBlockTree(BlockTree *bt) :
-    arity_(bt->arity_),
-    root_arity_(bt->root_arity_),
-    rank_select_support_(bt->rank_select_support_) {
+CBlockTree::CBlockTree(BlockTree *bt) : arity_(bt->arity_), root_arity_(bt->root_arity_) {
     Level lowest_complete_level = get_lowest_complete_level(bt);
 
     // Populate the rank values in the lowest level of the tree that is still complete (i.e. there are no blocks

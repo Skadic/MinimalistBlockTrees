@@ -50,12 +50,13 @@ class BlockTree {
     const int root_arity_;
     /// The maximum length of a leaf node.
     const int leaf_length_;
+    /// The size of the prefixes and suffixes of a block's represented string. This is saved for every internal block,
+    /// allowing fast substring queries.
+    int prefix_suffix_size_;
     /// Input sequence of the Tree
     const std::string input_;
     /// The root block
     Block *root_block_;
-    /// Whether this tree is built with rank and select support
-    bool rank_select_support_;
 
     ///
     /// @brief Create a new block tree from a string with the given properties.
@@ -85,6 +86,13 @@ class BlockTree {
     /// @return The character at the given index in the source text.
     ///
     int access(const int index) const;
+
+    ///
+    /// @brief Add support for fast substring queries.
+    ///
+    /// This populates the `prefix_suffix_` field in the internal blocks.
+    ///
+    virtual void add_fast_substring_support(int prefix_suffix_size);
 
     ///
     /// @brief Adds support for rank and select queries to this block tree.
