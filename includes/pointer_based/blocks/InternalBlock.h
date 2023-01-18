@@ -50,11 +50,14 @@ class InternalBlock : public Block {
     int access(const int i) const;
 
     ///
-    /// @brief Add support for fast substring queries.
+    /// @brief Get a substring from the input text.
     ///
-    /// This populates the `prefix_suffix_` field.
+    /// @param buf The char buffer to write to
+    /// @param index The index to start reading from.
+    /// @param len The length of the string to read.
+    /// @return The pointer position after writing
     ///
-    void add_fast_substring_support(int prefix_suffix_size);
+    char *substr(char *buf, const int index, const int len) const;
 
     ///
     /// @brief Add support for `rank` and `select` to this block, for the given character.

@@ -63,6 +63,16 @@ class LeafBlock : public Block {
     /// @return The character at index i in the source string.
     ///
     int access(const int i) const;
+
+    ///
+    /// @brief Get a substring from the input text.
+    ///
+    /// @param buf The char buffer to write to
+    /// @param index The index to start reading from.
+    /// @param len The length of the string to read.
+    /// @return The pointer position after writing
+    ///
+    char *substr(char *buf, const int index, const int len) const;
 };
 
 #endif // BLOCKTREE_PLEAVEBLOCK_H

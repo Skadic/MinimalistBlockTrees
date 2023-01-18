@@ -1,3 +1,4 @@
+#include <iostream>
 #include <pointer_based/blocks/BackBlock.h>
 
 BackBlock::BackBlock(Block             *parent,
@@ -58,8 +59,8 @@ int BackBlock::add_rank_select_support(const int c) {
     // If there is no second block, then second_rank already contains the answer
     // If there is, the ne need to add the number of times c appears in the second block
     pop_counts_[c] = (second_block_ == nullptr)
-                    ? second_rank
-                    : second_rank + second_block_->rank(c, offset_ + length() - 1 - first_block_->length());
+                         ? second_rank
+                         : second_rank + second_block_->rank(c, offset_ + length() - 1 - first_block_->length());
     return pop_counts_[c];
 }
 
@@ -83,4 +84,36 @@ int BackBlock::access(const int i) const {
         return second_block_->access(offset_ + i - first_block_->length());
     }
     return first_block_->access(i + offset_);
+}
+
+char *BackBlock::substr(char *buf, const int index, const int len) const {
+    const size_t block_index           = index / length();
+    const size_t internal_index        = index - block_index * length();
+    const size_t source_internal_index = internal_index + offset_;
+
+    // Is the substring entirely contained in the first source block?
+    if (source_internal_index + len <= length()) {
+        const size_t first_block_internal_index = source_internal_index;
+        return first_block_->substr(buf, first_block_internal_index, len);
+    }
+
+    // Is the substring entirely contained in the second source block?
+    if (internal_index + offset_ >= length()) {
+        const size_t second_block_internal_index = source_internal_index - length();
+        return second_block_->substr(buf, second_block_internal_index, len);
+    }
+
+    // This means, the substring crosses the boundary between the first and second source blocks
+    const size_t prefix_size = length() - offset_ - index;
+    const size_t suffix_size = len - prefix_size;
+
+    // the substring's prefix is part of the first source block
+    const auto prefix = first_block_->suffix(prefix_size);
+    // the substring's suffix is part of the second source block
+    const auto suffix = second_block_->prefix(suffix_size);
+
+    std::copy(prefix.begin(), prefix.end(), buf);
+    std::copy(suffix.begin(), suffix.end(), buf + prefix.size());
+
+    return buf + prefix.size() + suffix.size();
 }

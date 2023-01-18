@@ -16,31 +16,6 @@ InternalBlock::~InternalBlock() {
     }
 }
 
-void InternalBlock::add_fast_substring_support(const int prefix_suffix_size) {
-    const size_t len = length();
-
-    // We aim to save the prefix and the suffix, each of size prefix_suffix_size.
-    // If this block is smaller than both of these together, then we might as well just save the string represented by
-    // this block, as it would be smaller
-    auto prefix_end = start_index_ + prefix_suffix_size > source_.length() ? source_.end() : source_.begin() + start_index_ + prefix_suffix_size;
-    auto suffix_end = end_index_ > source_.length() ? source_.end() : source_.begin() + end_index_ + 1;
-    if (len <= 2 * prefix_suffix_size) {
-        prefix_ = std::string_view(source_.begin() + start_index_, suffix_end);
-        suffix_ = std::string_view(source_.begin() + start_index_, suffix_end);
-        return;
-    }
-
-    // Insert the prefix
-    prefix_ = std::string_view(source_.begin() + start_index_, prefix_end);
-
-    // Insert the suffix
-    suffix_ = std::string_view(source_.begin() + end_index_ - prefix_suffix_size + 1, suffix_end);
-
-    for (Block *child : children_) {
-        child->add_fast_substring_support(prefix_suffix_size);
-    }
-}
-
 int InternalBlock::add_rank_select_support(int character) {
     int cumulative_count = 0;
     // Add rank select support to each child and count the occurrences
@@ -154,3 +129,42 @@ int InternalBlock::access(const int i) const {
     }
     return -1;
 }
+
+char *InternalBlock::substr(char *buf, const int index, const int len) const {
+
+    const size_t child_len      = children_[0]->length();
+    const size_t block_index    = index / child_len;
+    const size_t internal_index = index - block_index * child_len;
+
+    // If the substring is part of this block's prefix, we can just read it from there
+    if (index + len <= prefix_.size()) {
+        std::copy(prefix_.begin() + index, prefix_.begin() + index + len, buf);
+        return buf + len;
+    }
+
+    // If the substring is part of this block's prefix, we can just read it from there
+    if (index >= length() - suffix_.size()) {
+        const size_t suffix_start_index = length() - suffix_.size();
+        const size_t start_in_suffix    = index - suffix_start_index;
+        std::copy(suffix_.begin() + start_in_suffix, suffix_.begin() + start_in_suffix + len, buf);
+        return buf + len;
+    }
+
+    // Does the substring cross a child boundary?
+    if (internal_index + len > child_len) {
+        // the substring's prefix is part of this child's suffix
+        const size_t prefix_size = child_len - internal_index;
+        const auto   prefix      = children_[block_index]->suffix(prefix_size);
+
+        // the substring's suffix is part of the following child's prefix
+        const size_t suffix_size = len - prefix_size;
+        const auto   suffix      = children_[block_index + 1]->prefix(suffix_size);
+
+        std::copy(prefix.begin(), prefix.end(), buf);
+        std::copy(suffix.begin(), suffix.end(), buf + prefix.size());
+
+        return buf + prefix.size() + suffix.size();
+    }
+
+    return children_[block_index]->substr(buf, index - block_index * child_len, len);
+};

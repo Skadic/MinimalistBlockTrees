@@ -2,6 +2,7 @@
 #define BLOCKTREE_PBLOCK_H
 
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -64,11 +65,13 @@ class Block {
     /// Needed for fast substring support. This stores the prefix of the string represented by this block
     /// represented.
     /// The size is given by the `prefix_suffix_size_` field in `BlockTree`.
+    /// This field is truncated if it would extend past the end of the input string!
     std::string_view prefix_;
 
     /// Needed for fast substring support. This stores the prefix of the string represented by this block
     /// represented.
     /// The size is given by the `prefix_suffix_size_` field in `BlockTree`.
+    /// This field is truncated if it would extend past the end of the input string!
     std::string_view suffix_;
 
     ///
@@ -116,6 +119,16 @@ class Block {
     /// @return The character at index i in the source string.
     ///
     virtual int access(const int i) const;
+
+    ///
+    /// @brief Get a substring from the input text.
+    ///
+    /// @param buf The char buffer to write to
+    /// @param index The index to start reading from.
+    /// @param len The length of the string to read.
+    /// @return The pointer position after writing
+    ///
+    virtual char *substr(char *buf, const int index, const int len) const;
 
     ///
     /// @brief A rank query on this block for a given character.
@@ -167,6 +180,24 @@ class Block {
     /// @return true, if this block is a leaf block *or* a back block, false if it is an internal block.
     ///
     virtual bool is_leaf() const;
+
+    ///
+    /// @brief Get the first `count` chars from this Block's prefix.
+    ///
+    /// This method returns at most as many characters as are actually saved in this block.
+    ///
+    /// @param count The number of characters.
+    ///
+    std::string_view prefix(const size_t count) const;
+
+    ///
+    /// @brief Get the last `count` chars from this Block's suffix.
+    ///
+    /// This method returns at most as many characters as are actually saved in this block.
+    ///
+    /// @param count The number of characters.
+    ///
+    std::string_view suffix(const size_t count) const;
 };
 
 #endif // BLOCKTREE_PBLOCK_H

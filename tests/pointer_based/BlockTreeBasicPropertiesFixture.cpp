@@ -3,6 +3,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <pointer_based/blocks/InternalBlock.h>
 #include <pointer_based/blocks/LeafBlock.h>
 #include <queue>
@@ -183,41 +184,44 @@ TEST_P(BlockTreeBasicPropertiesFixture, prefix_suffix_integrity_check) {
     while (!blocks.empty()) {
         Block *block = blocks.front();
         blocks.pop();
-        if (!dynamic_cast<InternalBlock *>(block)) {
-            EXPECT_TRUE(block->prefix_.empty()) << "A non-internal block should not save a prefix.";
-            EXPECT_TRUE(block->suffix_.empty()) << "A non-internal block should not save a suffix.";
-            continue;
-        }
+        // if (dynamic_cast<LeafBlock *>(block)) {
+        //     EXPECT_TRUE(block->prefix_.empty()) << "A leaf block should not save a prefix.";
+        //     EXPECT_TRUE(block->suffix_.empty()) << "A leaf should not save a suffix.";
+        //     continue;
+        // }
 
         // std::cout << "ANFANG " << block->prefix_suffix_ << " ENDE" << std::endl;
         //  For each internal block, get the range it represents.
         const int start       = block->start_index_;
         const int end         = block->end_index_;
         const int clamped_end = std::min((int64_t) input_.length() - 1, block->end_index_);
-        if (block->length() <= 2 * prefix_suffix_size_) {
+        if (block->length() < prefix_suffix_size_) {
             // If it is smaller than the prefix and suffix together,
             // then the entire block should just be saved as is.
             expected_view = {input_.begin() + start, input_.begin() + clamped_end + 1};
             actual_view   = block->prefix_;
-            EXPECT_EQ(expected_view, actual_view)
+            ASSERT_EQ(expected_view, actual_view)
                 << "The entire block should be saved here\nThis is the block: (" << start << ", " << clamped_end
                 << ")\nInput is " << input_.length() << " characters";
         } else {
+            auto prefix_end = start + prefix_suffix_size_ > input_.length()
+                                  ? input_.end()
+                                  : input_.begin() + start + prefix_suffix_size_;
+            auto suffix_end = end > input_.length() ? input_.end() : input_.begin() + end + 1;
             //  If it is larger, then only the prefix and suffix should be saved
-            expected_view = {input_.begin() + start, input_.begin() + start + prefix_suffix_size_};
+            expected_view = {input_.begin() + start, prefix_end};
             actual_view   = block->prefix_;
 
-            EXPECT_EQ(expected_view, actual_view)
+            ASSERT_EQ(expected_view, actual_view)
                 << "Only exactly the prefix should be saved here.\nThis is the block: (" << start << ", " << clamped_end
                 << ")\nInput is " << input_.length() << " characters";
 
             // If the suffix would start beyond the end of the input string we don't expect anything worthwhile to be in
             // there anyway
             if (end - prefix_suffix_size_ <= input_.size()) {
-                expected_view = {input_.begin() + clamped_end + 1 - prefix_suffix_size_,
-                                 input_.begin() + clamped_end + 1};
+                expected_view = {input_.begin() + end + 1 - prefix_suffix_size_, suffix_end};
                 actual_view   = block->suffix_;
-                EXPECT_EQ(expected_view, actual_view)
+                ASSERT_EQ(expected_view, actual_view)
                     << "Only exactly the suffix should be saved here.\nThis is the block: (" << start << ", "
                     << clamped_end << ")\nInput is " << input_.length() << " characters";
             }
@@ -226,6 +230,34 @@ TEST_P(BlockTreeBasicPropertiesFixture, prefix_suffix_integrity_check) {
                 blocks.push(b);
             }
         }
+    }
+}
+
+/// Test substr method on substrings larger than the prefixes and suffixes stored in the blocks
+TEST_P(BlockTreeBasicPropertiesFixture, substr_larger_check) {
+    constexpr size_t size = 50;
+    char             buf[size + 1];
+
+    for (size_t i = 0; i < input_.size() - size; i++) {
+        std::ranges::fill(buf, 0);
+        block_tree_->substr(buf, i, size);
+        std::string_view actual   = {buf};
+        std::string_view expected = {input_.begin() + i, input_.begin() + i + size};
+        ASSERT_EQ(expected, actual) << "incorrect substring at index " << i;
+    }
+}
+
+/// Test substr method on substrings smaller than the prefixes and suffixes stored in the blocks
+TEST_P(BlockTreeBasicPropertiesFixture, substr_smaller_check) {
+    constexpr size_t size = 2;
+    char             buf[size + 1];
+
+    for (size_t i = 0; i < input_.size() - size; i++) {
+        std::ranges::fill(buf, 0);
+        block_tree_->substr(buf, i, size);
+        std::string_view actual   = {buf};
+        std::string_view expected = {input_.begin() + i, input_.begin() + i + size};
+        ASSERT_EQ(expected, actual) << "incorrect substring at index " << i;
     }
 }
 

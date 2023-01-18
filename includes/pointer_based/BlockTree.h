@@ -88,6 +88,16 @@ class BlockTree {
     int access(const int index) const;
 
     ///
+    /// @brief Get a substring from the input text.
+    ///
+    /// @param buf The char buffer to write to
+    /// @param index The index to start reading from.
+    /// @param len The length of the string to read.
+    /// @return The pointer position after writing
+    ///
+    char *substr(char *buf, const int index, const int len) const;
+
+    ///
     /// @brief Add support for fast substring queries.
     ///
     /// This populates the `prefix_suffix_` field in the internal blocks.

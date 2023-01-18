@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <iostream>
 #include <pointer_based/blocks/LeafBlock.h>
 
 LeafBlock::LeafBlock(Block *parent, int64_t start_index, int64_t end_index, const std::string &source) :
@@ -36,3 +38,8 @@ int LeafBlock::select(const int c, const int j) const {
 }
 
 int LeafBlock::access(const int i) const { return source_[start_index_ + i]; }
+
+char *LeafBlock::substr(char *buf, const int index, const int len) const {
+    std::copy(source_.begin() + start_index_ + index, source_.begin() + start_index_ + index + len, buf);
+    return buf + len;
+}

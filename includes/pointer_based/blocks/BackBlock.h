@@ -41,6 +41,16 @@ class BackBlock : public Block {
     int access(const int i) const;
 
     ///
+    /// @brief Get a substring from the input text.
+    ///
+    /// @param buf The char buffer to write to
+    /// @param index The index to start reading from.
+    /// @param len The length of the string to read.
+    /// @return The pointer position after writing
+    ///
+    char *substr(char *buf, const int index, const int len) const;
+
+    ///
     /// @brief Add support for `rank` and `select` to this block, for the given character.
     ///
     /// @param character A character to add rank select support for.

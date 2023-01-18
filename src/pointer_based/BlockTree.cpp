@@ -70,7 +70,10 @@ BlockTree::BlockTree(const std::string &input,
 
 BlockTree::~BlockTree() { delete root_block_; }
 
-void BlockTree::add_fast_substring_support(const int prefix_suffix_size) { root_block_->add_fast_substring_support(prefix_suffix_size); }
+void BlockTree::add_fast_substring_support(const int prefix_suffix_size) {
+    prefix_suffix_size_ = prefix_suffix_size;
+    root_block_->add_fast_substring_support(prefix_suffix_size);
+}
 
 void BlockTree::add_rank_select_support(int c) { root_block_->add_rank_select_support(c); }
 
@@ -113,6 +116,21 @@ void BlockTree::clean_unnecessary_expansions() {
 }
 
 int BlockTree::access(const int i) const { return root_block_->access(i); }
+
+char *BlockTree::substr(char *buf, const int index, const int len) const {
+    const size_t num_full_chunks = len / prefix_suffix_size_;
+    for (int i = 0; i < num_full_chunks; ++i) {
+        buf = root_block_->substr(buf, index + i * prefix_suffix_size_, prefix_suffix_size_);
+    }
+
+    // In this case we haven't read all required chars yet
+    // This happens if the length can't be cleanly cut into segments of length prefix_suffix_size
+    const size_t previously_read_chars = num_full_chunks * prefix_suffix_size_;
+    if (previously_read_chars < len) {
+        buf = root_block_->substr(buf, index + previously_read_chars, len - previously_read_chars);
+    }
+    return buf;
+};
 
 Level BlockTree::next_level(const Level &level) const {
     // The arity of the current level. If we're at the root, then the arity is of course the root arity.
