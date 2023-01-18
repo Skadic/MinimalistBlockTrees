@@ -74,17 +74,38 @@ class CBlockTree {
     /// This maps character -> level -> block index (skipping internal blocks) -> pop count
     std::unordered_map<int, std::vector<sdsl::int_vector<> *>> first_block_pop_counts_;
 
-    CBlockTree(BlockTree *source_tree);
-    CBlockTree(std::istream &input);
+    explicit CBlockTree(BlockTree *source_tree);
+    explicit CBlockTree(std::istream &input);
     virtual ~CBlockTree();
 
-    int access(int i);
-    int rank(int character, int i);
-    int select(int character, int rank);
+    ///
+    /// @brief Get the character at the given index in the input.
+    ///
+    /// @param index An index in the input text.
+    /// @return The character at the given index in the input text.
+    ///
+    int access(int i) const;
 
-    int  size();
-    int  get_partial_size();
-    void serialize(std::ostream &character);
+    ///
+    /// @brief Gets the number the given character's occurrences up to an index.
+    ///
+    /// @param character A character to count.
+    /// @param index The index up to which occurences are counted.
+    /// @return The number of times the character appears up to this index.
+    ///
+    [[nodiscard]] int rank(int character, int index) const;
+
+    ///
+    /// @brief Gets the index of the rank-th occurrence of the given character.
+    ///
+    /// @param character A character to search for.
+    /// @param rank The desired rank of the character.
+    /// @return An index i, such that `access(i) == c` and `rank(c, i) == rank`.
+    [[nodiscard]] int select(int character, int rank) const;
+
+    [[nodiscard]] int size() const;
+    [[nodiscard]] int get_partial_size() const;
+    void              serialize(std::ostream &character) const;
 };
 
 #endif // BLOCKTREE_PCBLOCKTREE_H

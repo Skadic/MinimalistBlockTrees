@@ -131,10 +131,10 @@ using PopCounts = std::unordered_map<int, sdsl::int_vector<> *>;
 ///
 std::pair<Offsets *, PopCounts> offsets_and_first_block_pop_counts(const Level      &current_level,
                                                                    const int         number_of_leaves,
-                                                                   sdsl::bit_vector *is_internal_block) {
+                                                                   sdsl::bit_vector &is_internal_block) {
     // For each non-internal of this level, save the total offset (in characters) from the start of the string, from
     // which the content of this block is copied
-    Offsets *offsets = new sdsl::int_vector<>(number_of_leaves);
+    auto *offsets = new Offsets(number_of_leaves);
     // For each character, how often does this character appear in the part of the source that lies in first_block
     // See the docs for the respective field in `Block`.
     // The intvectors in here store information for each block of this level that is not an internal block i.e. only
@@ -151,7 +151,7 @@ std::pair<Offsets *, PopCounts> offsets_and_first_block_pop_counts(const Level  
     const int block_length = current_level.front()->length();
     for (int i = 0; i < current_level.size(); ++i) {
         // If the current block is not internal (i.e. is a leaf block or a back block)
-        if (!(*is_internal_block)[i]) {
+        if (!is_internal_block[i]) {
             // This is now the j-th non-internal block on this level
             for (const auto [character, first_block_pop_count] : current_level[i]->pop_counts_in_first_block_) {
                 (*first_block_pop_counts[character])[j] = first_block_pop_count;
@@ -180,7 +180,7 @@ CBlockTree::CBlockTree(BlockTree *bt) : arity_(bt->arity_), root_arity_(bt->root
     Level current_level = lowest_complete_level;
     Level next_level    = bt->next_level(lowest_complete_level);
 
-    while (next_level.size() != 0) {
+    while (!next_level.empty()) {
         // A bit vector for this level that marks whether the specific block is internal (= 1) or not (= 0).
         sdsl::bit_vector *is_internal_block = new sdsl::bit_vector(current_level.size(), 0);
 
@@ -202,7 +202,7 @@ CBlockTree::CBlockTree(BlockTree *bt) : arity_(bt->arity_), root_arity_(bt->root
         populate_level_pop_counts(this, next_level);
         // ...and the offsets as well as the pop counts in first_block_
         auto [offsets, first_block_pop_counts] =
-            offsets_and_first_block_pop_counts(current_level, number_of_leaves, is_internal_block);
+            offsets_and_first_block_pop_counts(current_level, number_of_leaves, *is_internal_block);
         // Add the offsets for this level to the tree
         offsets_.push_back(offsets);
 
@@ -214,7 +214,7 @@ CBlockTree::CBlockTree(BlockTree *bt) : arity_(bt->arity_), root_arity_(bt->root
 
         // Add the is_internal bitvectors to the tree along with a rank data structure
         is_internal_.push_back(is_internal_block);
-        sdsl::rank_support_v<1> *internal_block_ranks = new sdsl::rank_support_v<1>(is_internal_block);
+        auto *internal_block_ranks = new sdsl::rank_support_v<1>(is_internal_block);
         is_internal_ranks_.push_back(internal_block_ranks);
 
         // Go to the next level
@@ -228,7 +228,7 @@ CBlockTree::CBlockTree(BlockTree *bt) : arity_(bt->arity_), root_arity_(bt->root
     Level last_level = current_level;
 
     // Calculate the string that is represented by the concatenation of the last level of the tree (all leaves)
-    std::string leaf_string = "";
+    std::string leaf_string;
     for (Block *b : last_level) {
         leaf_string += b->represented_string();
     }
@@ -348,7 +348,7 @@ CBlockTree::~CBlockTree() {
     }
 }
 
-int CBlockTree::access(int i) {
+int CBlockTree::access(int i) const {
 
     int current_block  = i / lowest_complete_level_block_size_;
     int current_length = lowest_complete_level_block_size_;
@@ -374,7 +374,7 @@ int CBlockTree::access(int i) {
     return (*alphabet_)[(*leaf_string_)[i + current_block * current_length]];
 }
 
-int CBlockTree::rank(int c, int i) {
+int CBlockTree::rank(int c, int i) const {
 
     auto &ranks        = pop_counts_[c];
     auto &second_ranks = first_block_pop_counts_[c];
@@ -420,7 +420,7 @@ int CBlockTree::rank(int c, int i) {
     return r;
 }
 
-int CBlockTree::select(int c, int k) {
+int CBlockTree::select(int c, int k) const {
 
     auto &ranks                    = pop_counts_[c];
     auto &second_ranks             = first_block_pop_counts_[c];
@@ -493,7 +493,7 @@ int CBlockTree::select(int c, int k) {
     return -1;
 }
 
-int CBlockTree::get_partial_size() {
+int CBlockTree::get_partial_size() const {
     int fields = sizeof(int) * 3;
 
     int leaf_string_size = sdsl::size_in_bytes(*leaf_string_);
@@ -519,7 +519,7 @@ int CBlockTree::get_partial_size() {
     return fields + mapping_size + alphabet_size + bt_bv_size + bt_bv_rank_size + bt_offsets_size + leaf_string_size;
 }
 
-int CBlockTree::size() {
+int CBlockTree::size() const {
 
     int bt_ranks_total_size = (pop_counts_.size() + 1) * sizeof(void *);
     for (auto pair : pop_counts_) {
@@ -549,7 +549,7 @@ int CBlockTree::size() {
     return rank_size + partial_total_size;
 }
 
-void CBlockTree::serialize(std::ostream &out) {
+void CBlockTree::serialize(std::ostream &out) const {
 
     out.write((char *) &arity_, sizeof(int));
     out.write((char *) &root_arity_, sizeof(int));

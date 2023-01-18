@@ -126,7 +126,6 @@ class BlockTree {
     /// @param character A character to search for.
     /// @param rank The desired rank of the character.
     /// @return An index i, such that `access(i) == c` and `rank(c, i) == rank`.
-
     [[nodiscard]] int select(int character, int rank) const;
 
     void process_back_pointers_heuristic();
