@@ -123,7 +123,7 @@ TEST_P(BlockTreeBasicPropertiesFixture, parameters_check) {
 
     for (std::vector<Block *> level : levels)
         for (Block *b : level) {
-            EXPECT_EQ(b->source_, input_);
+            EXPECT_EQ(b->input_, input_);
         }
 }
 

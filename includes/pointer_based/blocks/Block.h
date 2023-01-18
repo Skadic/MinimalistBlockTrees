@@ -21,7 +21,7 @@ class Block {
     int64_t end_index_;
 
     /// The string this block tree is built from
-    const std::string &source_;
+    const std::string &input_;
 
     /// Maps a character to the number of times it appears in this block
     std::unordered_map<int, int> pop_counts_;
@@ -39,7 +39,7 @@ class Block {
     Block *second_block_;
 
     /// The offset at which this block's source starts in its first_block
-    int offset_;
+    int offset_{};
 
     /// This will be set to true if the string represented by this block and its right neighbor
     /// was found somewhere else in the text
@@ -78,11 +78,11 @@ class Block {
     /// @brief Create a new block.
     ///
     /// @param parent This block's parent.
-    /// @param start_index Ths block's start index in the source.
-    /// @param end_index Ths block's start index in the source.
-    /// @param source The source string.
+    /// @param start_index Ths block's start index in the input.
+    /// @param end_index Ths block's start index in the input.
+    /// @param input The input string.
     ///
-    Block(Block *parent, int64_t start_index, int64_t end_index, const std::string &source);
+    Block(Block *parent, int64_t start_index, int64_t end_index, const std::string &input);
     virtual ~Block();
 
     ///
@@ -103,7 +103,7 @@ class Block {
     /// @param character A character to add rank select support for.
     /// @return The number of times this character exists in this block.
     ///
-    virtual int add_rank_select_support(const int character);
+    virtual int add_rank_select_support(int character);
 
     ///
     /// @brief Add support for fast substring queries.
@@ -116,9 +116,9 @@ class Block {
     /// @brief Accesses the given index.
     ///
     /// @param i An index
-    /// @return The character at index i in the source string.
+    /// @return The character at index i in the input string.
     ///
-    virtual int access(const int i) const;
+    virtual int access(int i) const;
 
     ///
     /// @brief Get a substring from the input text.
@@ -128,7 +128,7 @@ class Block {
     /// @param len The length of the string to read.
     /// @return The pointer position after writing
     ///
-    virtual char *substr(char *buf, const int index, const int len) const;
+    virtual char *substr(char *buf, int index, int len) const;
 
     ///
     /// @brief A rank query on this block for a given character.
@@ -139,7 +139,7 @@ class Block {
     /// @param i An index
     /// @return The number of times the character occurs up to and including the given index.
     ///
-    virtual int rank(const int character, const int i) const;
+    virtual int rank(int character, int i) const;
 
     ///
     /// @brief A select query on this block for a given character.
@@ -150,7 +150,7 @@ class Block {
     /// @param rank The rank of the character to look for
     /// @return The position of the rank-th occurrence of the given character
     ///
-    virtual int select(const int character, const int rank) const;
+    virtual int select(int character, int rank) const;
 
     ///
     /// @brief Returns this block's children.
@@ -158,7 +158,7 @@ class Block {
     /// @param leaf_length The tree's leaf length
     /// @param arity This block's arity
     ///
-    virtual std::vector<Block *> &children(const int leaf_length, const int arity);
+    virtual std::vector<Block *> &children(int leaf_length, int arity);
 
     ///
     /// @brief If an internal block has only leaves as its children, no other blocks are pointing to it and this block
@@ -188,7 +188,7 @@ class Block {
     ///
     /// @param count The number of characters.
     ///
-    std::string_view prefix(const size_t count) const;
+    std::string_view prefix(size_t count) const;
 
     ///
     /// @brief Get the last `count` chars from this Block's suffix.
@@ -197,7 +197,7 @@ class Block {
     ///
     /// @param count The number of characters.
     ///
-    std::string_view suffix(const size_t count) const;
+    std::string_view suffix(size_t count) const;
 };
 
 #endif // BLOCKTREE_PBLOCK_H

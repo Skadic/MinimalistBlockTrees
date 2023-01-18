@@ -1,6 +1,10 @@
 #include "../../includes/blocktree.utils/RabinKarp.h"
 
-RabinKarp::RabinKarp(const std::string &s, const int start_index, const int window_size, const int range, const int sigma) :
+RabinKarp::RabinKarp(const std::string &s,
+                     const int          start_index,
+                     const int          window_size,
+                     const int          range,
+                     const int          sigma) :
     sigma_(sigma),
     window_size_(window_size),
     s_(s),

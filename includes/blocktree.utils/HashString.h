@@ -7,14 +7,20 @@ class HashString {
   public:
     /// The string's hash value
     const size_t hash_;
-    /// The source string
+    /// The input string
     const std::string &s_;
-    /// The string's start position in the source string
+    /// The string's start position in the input string
     const int start_;
-    /// The string's end position in the source string (inclusive)
+    /// The string's end position in the input string (inclusive)
     const int end_;
 
-    HashString(const size_t hash, const std::string &source, const int start_position, const int end_position);
+    /// @brief Generate a new hash string that saves the hash of a given substring
+    ///
+    /// @param hash The hash value of the given substring
+    /// @param input The original full input string
+    /// @param start_position The start position of the hashed substring inside the input string
+    /// @param end_position The (inclusive) end position of the hashed substring inside the input string
+    HashString(size_t hash, const std::string &input, int start_position, int end_position);
     ~HashString();
 
     bool operator==(const HashString &other) const;

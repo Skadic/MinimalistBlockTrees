@@ -1,42 +1,40 @@
 #include <pointer_based/blocks/Block.h>
 #include <string_view>
 
-Block::Block(Block *parent, int64_t start_index, int64_t end_index, const std::string &source) :
+Block::Block(Block *parent, int64_t start_index, int64_t end_index, const std::string &input) :
     parent_(parent),
     start_index_(start_index),
     end_index_(end_index),
-    source_(source),
+    input_(input),
     left_(false),
     right_(false),
     first_block_(this),
     second_block_(nullptr),
     pointing_to_me_(0),
     level_index_(0),
+    offset_(0),
     first_occurrence_level_index_(0) {}
 
-Block::~Block() {}
+Block::~Block() = default;
 
 void Block::add_fast_substring_support(const int prefix_suffix_size) {
     const size_t len = length();
 
     // We aim to save the prefix and the suffix, each of size prefix_suffix_size.
     // If this block is smaller than their size, then we might as well just save the string represented by
-    // this block, as it would be smaller
-    const auto prefix_end = start_index_ + prefix_suffix_size > source_.length()
-                                ? source_.end()
-                                : source_.begin() + start_index_ + prefix_suffix_size;
-    const auto suffix_end = end_index_ > source_.length() ? source_.end() : source_.begin() + end_index_ + 1;
+    // this block
+    const auto prefix_end = start_index_ + prefix_suffix_size > input_.length()
+                                ? input_.end()
+                                : input_.begin() + start_index_ + prefix_suffix_size;
+    const auto suffix_end = end_index_ > input_.length() ? input_.end() : input_.begin() + end_index_ + 1;
     if (len < prefix_suffix_size) {
-        prefix_ = std::string_view(source_.begin() + start_index_, suffix_end);
-        suffix_ = std::string_view(source_.begin() + start_index_, suffix_end);
+        prefix_ = std::string_view(input_.begin() + start_index_, suffix_end);
+        suffix_ = std::string_view(input_.begin() + start_index_, suffix_end);
         return;
     }
 
-    // Insert the prefix
-    prefix_ = std::string_view(source_.begin() + start_index_, prefix_end);
-
-    // Insert the suffix
-    suffix_ = std::string_view(source_.begin() + end_index_ - prefix_suffix_size + 1, suffix_end);
+    prefix_ = std::string_view(input_.begin() + start_index_, prefix_end);
+    suffix_ = std::string_view(input_.begin() + end_index_ - prefix_suffix_size + 1, suffix_end);
 
     for (Block *child : children_) {
         child->add_fast_substring_support(prefix_suffix_size);
@@ -51,7 +49,7 @@ int Block::select(const int c, const int j) const { return -1; }
 
 int64_t Block::length() const { return end_index_ - start_index_ + 1; }
 
-std::string Block::represented_string() const { return source_.substr(start_index_, length()); }
+std::string Block::represented_string() const { return input_.substr(start_index_, length()); }
 
 std::vector<Block *> &Block::children(const int leaf_length, const int r) { return children_; }
 

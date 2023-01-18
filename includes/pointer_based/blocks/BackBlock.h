@@ -16,9 +16,9 @@ class BackBlock : public Block {
     /// @brief Create a new back block.
     ///
     /// @param parent This block's parent.
-    /// @param start_index The start index of this block in the source.
-    /// @param end_index The (inclusive) end index of this block in the source.
-    /// @param source The source string.
+    /// @param start_index The start index of this block in the input.
+    /// @param end_index The (inclusive) end index of this block in the input.
+    /// @param input The input string.
     /// @param first_block The first block from which to copy.
     /// @param second_block The (potentially null) second block from which to copy.
     /// @param offset The offset inside the first block from which to start reading.
@@ -26,19 +26,19 @@ class BackBlock : public Block {
     BackBlock(Block             *parent,
               int64_t            start_index,
               int64_t            end_index,
-              const std::string &source,
+              const std::string &input,
               Block             *first_block,
               Block             *second_block,
               int                offset);
-    ~BackBlock();
+    ~BackBlock() override;
 
     ///
     /// @brief Accesses the given index.
     ///
     /// @param i An index
-    /// @return The character at index i in the source string.
+    /// @return The character at index i in the input string.
     ///
-    int access(const int i) const;
+    [[nodiscard]] int access(int i) const override;
 
     ///
     /// @brief Get a substring from the input text.
@@ -48,7 +48,7 @@ class BackBlock : public Block {
     /// @param len The length of the string to read.
     /// @return The pointer position after writing
     ///
-    char *substr(char *buf, const int index, const int len) const;
+    char *substr(char *buf, int index, int len) const override;
 
     ///
     /// @brief Add support for `rank` and `select` to this block, for the given character.
@@ -56,7 +56,7 @@ class BackBlock : public Block {
     /// @param character A character to add rank select support for.
     /// @return The number of times this character exists in this block.
     ///
-    int add_rank_select_support(const int character);
+    int add_rank_select_support(int character) override;
 
     ///
     /// @brief A rank query on this block for a given character.
@@ -67,7 +67,7 @@ class BackBlock : public Block {
     /// @param i An index
     /// @return The number of times the character occurs up to and including the given index.
     ///
-    int rank(const int character, const int i) const;
+    [[nodiscard]] int rank(int character, int i) const override;
 
     ///
     /// @brief A select query on this block for a given character.
@@ -78,7 +78,7 @@ class BackBlock : public Block {
     /// @param rank The rank of the character to look for
     /// @return The position of the rank-th occurrence of the given character
     ///
-    int select(const int character, const int i) const;
+    [[nodiscard]] int select(int character, int i) const override;
 };
 
 #endif // BLOCKTREE_PBACKBLOCK_H

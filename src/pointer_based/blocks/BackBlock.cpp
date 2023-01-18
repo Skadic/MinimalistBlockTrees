@@ -4,11 +4,11 @@
 BackBlock::BackBlock(Block             *parent,
                      int64_t            start_index,
                      int64_t            end_index,
-                     const std::string &source,
+                     const std::string &input,
                      Block             *first_block,
                      Block             *second_block,
                      int                offset) :
-    Block(parent, start_index, end_index, source) {
+    Block(parent, start_index, end_index, input) {
     first_block_ = first_block;
 
     // If there is a second block from which we need to copy

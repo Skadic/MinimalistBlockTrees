@@ -13,12 +13,12 @@ class InternalBlock : public Block {
     /// @brief Create a new internal block.
     ///
     /// @param parent This block's parent.
-    /// @param start_index Ths block's start index in the source.
-    /// @param end_index Ths block's start index in the source.
-    /// @param source The source string.
+    /// @param start_index Ths block's start index in the input.
+    /// @param end_index Ths block's start index in the input.
+    /// @param input The input string.
     ///
-    InternalBlock(Block *parent, int64_t start_index, int64_t end_index, const std::string &source);
-    ~InternalBlock();
+    InternalBlock(Block *parent, int64_t start_index, int64_t end_index, const std::string &input);
+    ~InternalBlock() override;
 
     ///
     /// @brief Returns this block's children.
@@ -26,28 +26,28 @@ class InternalBlock : public Block {
     /// @param leaf_length The tree's leaf length.
     /// @param arity This block's arity
     ///
-    std::vector<Block *> &children(int leaf_length, int arity);
+    std::vector<Block *> &children(int leaf_length, int arity) override;
 
     ///
     /// @brief If an internal block has only leaves as its children, no other blocks are pointing to it and this block
     /// itself points back to another block, then replace it with a back block pointing back at its source.
     ///
-    void clean_unnecessary_expansions();
+    void clean_unnecessary_expansions() override;
 
     ///
     /// @brief Checks whether this block is a leaf. Since this is an internal block, this is false.
     ///
     /// @return false
     ///
-    bool is_leaf() const;
+    bool is_leaf() const override;
 
     ///
     /// @brief Accesses the given index.
     ///
     /// @param i An index
-    /// @return The character at index i in the source string.
+    /// @return The character at index i in the input string.
     ///
-    int access(const int i) const;
+    [[nodiscard]] int access(int i) const override;
 
     ///
     /// @brief Get a substring from the input text.
@@ -57,7 +57,7 @@ class InternalBlock : public Block {
     /// @param len The length of the string to read.
     /// @return The pointer position after writing
     ///
-    char *substr(char *buf, const int index, const int len) const;
+    char *substr(char *buf, int index, int len) const override;
 
     ///
     /// @brief Add support for `rank` and `select` to this block, for the given character.
@@ -65,7 +65,7 @@ class InternalBlock : public Block {
     /// @param character A character to add rank select support for.
     /// @return The number of times this character exists in this block.
     ///
-    int add_rank_select_support(const int character);
+    int add_rank_select_support(int character) override;
 
     ///
     /// @brief A rank query on this block for a given character.
@@ -76,7 +76,7 @@ class InternalBlock : public Block {
     /// @param i An index
     /// @return The number of times the character occurs up to and including the given index.
     ///
-    int rank(const int character, const int i) const;
+    [[nodiscard]] int rank(int character, int i) const override;
 
     ///
     /// @brief A select query on this block for a given character.
@@ -87,7 +87,7 @@ class InternalBlock : public Block {
     /// @param rank The rank of the character to look for
     /// @return The position of the rank-th occurrence of the given character
     ///
-    int select(const int character, const int rank) const;
+    [[nodiscard]] int select(int character, int rank) const override;
 };
 
 #endif // BLOCKTREE_PLAZYINTERNALBLOCK_H

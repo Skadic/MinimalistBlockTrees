@@ -7,8 +7,8 @@
 #include <ranges>
 #include <string_view>
 
-InternalBlock::InternalBlock(Block *parent, int64_t start_index, int64_t end_index, const std::string &source) :
-    Block(parent, start_index, end_index, source) {}
+InternalBlock::InternalBlock(Block *parent, int64_t start_index, int64_t end_index, const std::string &input) :
+    Block(parent, start_index, end_index, input) {}
 
 InternalBlock::~InternalBlock() {
     for (int i = children_.size() - 1; i >= 0; i--) {
@@ -67,7 +67,7 @@ int InternalBlock::select(const int character, const int rank) const {
 
 std::vector<Block *> &InternalBlock::children(const int leaf_length, const int arity) {
     // If the children are already calculated, return them
-    if (children_.size() > 0) {
+    if (!children_.empty()) {
         return children_;
     }
 
@@ -76,12 +76,12 @@ std::vector<Block *> &InternalBlock::children(const int leaf_length, const int a
     for (int i = 0; i < arity; ++i) {
         const int start = start_index_ + i * child_block_length;
         const int end   = start_index_ + (i + 1) * child_block_length - 1;
-        if (start < source_.size()) {
+        if (start < input_.size()) {
             // If the child would be small enough to be a leaf or is smaller than its arity (so it wouldn't be able to
             // split anymore) create the children as leaf blocks
             Block *child = (child_block_length <= leaf_length || child_block_length <= arity)
-                               ? static_cast<Block *>(new LeafBlock(this, start, end, source_))
-                               : static_cast<Block *>(new InternalBlock(this, start, end, source_));
+                               ? static_cast<Block *>(new LeafBlock(this, start, end, input_))
+                               : static_cast<Block *>(new InternalBlock(this, start, end, input_));
             children_.push_back(child);
         }
     }
@@ -101,7 +101,7 @@ void InternalBlock::clean_unnecessary_expansions() {
     // as its source, we can replace this entire subtree with a back block pointing to its source
     if (all_children_leaves && pointing_to_me_ == 0 && first_block_->start_index_ < start_index_ &&
         second_block_ != this) {
-        BackBlock *bb = new BackBlock(parent_, start_index_, end_index_, source_, first_block_, second_block_, offset_);
+        BackBlock *bb = new BackBlock(parent_, start_index_, end_index_, input_, first_block_, second_block_, offset_);
         bb->level_index_                  = level_index_;
         bb->first_occurrence_level_index_ = first_occurrence_level_index_;
         bb->left_                         = true;

@@ -1,6 +1,10 @@
 #include <blocktree.utils/HashString.h>
 
-HashString::HashString(const size_t hash, const std::string &s, const int init, const int end) : hash_(hash), s_(s), start_(init), end_(end) {}
+HashString::HashString(const size_t hash, const std::string &input, const int init, const int end) :
+    hash_(hash),
+    s_(input),
+    start_(init),
+    end_(end) {}
 
 HashString::~HashString() {}
 

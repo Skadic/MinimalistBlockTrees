@@ -75,7 +75,7 @@ void BlockTree::add_fast_substring_support(const int prefix_suffix_size) {
     root_block_->add_fast_substring_support(prefix_suffix_size);
 }
 
-void BlockTree::add_rank_select_support(int c) { root_block_->add_rank_select_support(c); }
+void BlockTree::add_rank_select_support(int c) const { root_block_->add_rank_select_support(c); }
 
 int BlockTree::rank(const int c, const int i) const { return root_block_->rank(c, i); }
 
