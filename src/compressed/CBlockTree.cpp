@@ -5,27 +5,7 @@
 
 using Level = BlockTree::Level;
 
-///
-/// @brief Gets the lowest level of the given block tree that is not fully comprised of internal blocks.
-///
-/// In other words, this returns the lowest level of the block tree that is still *complete* in the sense that there are
-/// no gaps in the level where blocks are missing.
-///
-/// @param bt The uncompressed pointer-based block tree
-/// @return A vector of pointers pointing to the blocks of the lowest complete level of the given block tree in order
-/// from left to right.
-///
-auto get_lowest_complete_level(const BlockTree *bt) -> Level {
-    Level current_level = {bt->root_block_};
-    while (true) {
-        for (Block *b : current_level) {
-            if (b->is_leaf()) {
-                return current_level;
-            }
-        }
-        current_level = bt->next_level(current_level);
-    }
-}
+namespace cbt_util {
 
 ///
 /// @brief Populates the ranks as well as the number of characters inside each block for the lowest complete level of
@@ -64,13 +44,13 @@ void populate_lowest_complete_level_ranks(CBlockTree *cbt, const Level &lowest_c
             // Set the ranks of this character for the current block
             (*cbt->pop_counts_[character][0])[block_index] = lowest_complete_level[block_index]->pop_counts_[character];
             // Store the cumulative ranks before this block into the temporary map
-            // This will be the prefix ranks value for the *next* block (since we only want to cound the ranks *before*)
+            // This will be the prefix ranks value for the *next* block (since we only want to count the ranks *before*)
             // each block
             current_prefix_ranks[character] += lowest_complete_level[block_index]->pop_counts_[character];
         }
     }
 
-    // Compress the rank intvectors
+    // Compress the rank int vectors
     for (auto &[_, ranks] : cbt->lowest_complete_level_ranks_) {
         sdsl::util::bit_compress(*ranks);
     }
@@ -90,7 +70,7 @@ void populate_lowest_complete_level_ranks(CBlockTree *cbt, const Level &lowest_c
 ///
 void populate_level_pop_counts(CBlockTree *cbt, const Level &level) {
     // Allocate a new int vector for each character to store its ranks
-    // We are pushing the new int vector onto the vector containing all intvectors
+    // We are pushing the new int vector onto the vector containing all int vectors
     // That means that from now on the last element (.back()) for each character is the one we need to worry about for
     // this level
     for (auto &[character, _] : level[0]->pop_counts_) {
@@ -137,7 +117,7 @@ std::pair<Offsets *, PopCounts> offsets_and_first_block_pop_counts(const Level  
     auto *offsets = new Offsets(number_of_leaves);
     // For each character, how often does this character appear in the part of the source that lies in first_block
     // See the docs for the respective field in `Block`.
-    // The intvectors in here store information for each block of this level that is not an internal block i.e. only
+    // The int vectors in here store information for each block of this level that is not an internal block i.e. only
     // for leaf blocks and back blocks
     PopCounts first_block_pop_counts;
 
@@ -166,8 +146,53 @@ std::pair<Offsets *, PopCounts> offsets_and_first_block_pop_counts(const Level  
     return {offsets, first_block_pop_counts};
 }
 
-CBlockTree::CBlockTree(BlockTree *bt) : arity_(bt->arity_), root_arity_(bt->root_arity_) {
-    Level lowest_complete_level = get_lowest_complete_level(bt);
+void fill_fast_substring_data(CBlockTree *cbt, const Level &level) {
+    const size_t   level_size           = level.size();
+    const uint32_t level_block_size     = level[0]->length();
+    const size_t   saved_data_per_block = std::min(level_block_size, 2 * cbt->prefix_suffix_size_);
+    cbt->prefix_suffix_symbols_.push_back(new sdsl::int_vector<>(level_size * saved_data_per_block, 0));
+    auto &symbols = *cbt->prefix_suffix_symbols_.back();
+    for (int block_index = 0; block_index < level_size; block_index++) {
+        Block           *block  = level[block_index];
+        std::string_view prefix = block->prefix_;
+        std::string_view suffix = block->suffix_;
+
+        // In this case the prefix and suffix are equal
+        if (level_block_size <= cbt->prefix_suffix_size_) {
+            for (size_t i = 0; i < saved_data_per_block; ++i) {
+                const auto mapped_char                          = cbt->mapping_[prefix[i]];
+                symbols[block_index * saved_data_per_block + i] = mapped_char;
+            }
+            continue;
+        }
+
+        for (size_t i = 0; i < saved_data_per_block >> 1; ++i) {
+            symbols[block_index * saved_data_per_block + i] = cbt->mapping_[prefix[i]];
+        }
+
+        // We don't need the suffix if it's the last block of the level
+        // It's likely to be incomplete anyway
+        if (block_index == level_size - 1) {
+            continue;
+        }
+
+        for (size_t i = 0; i < saved_data_per_block >> 1; ++i) {
+            symbols[block_index * saved_data_per_block + prefix.size() + i] = cbt->mapping_[suffix[i]];
+        }
+    }
+    sdsl::util::bit_compress(symbols);
+}
+
+} // namespace cbt_util
+
+CBlockTree::CBlockTree(BlockTree *bt) :
+    arity_(bt->arity_),
+    root_arity_(bt->root_arity_),
+    prefix_suffix_size_(bt->prefix_suffix_size_),
+    input_size(bt->input_.size()) {
+    using namespace cbt_util;
+
+    const auto [lowest_complete_level, _] = bt->get_lowest_complete_level();
 
     // Populate the rank values in the lowest level of the tree that is still complete (i.e. there are no blocks
     // missing)
@@ -182,7 +207,7 @@ CBlockTree::CBlockTree(BlockTree *bt) : arity_(bt->arity_), root_arity_(bt->root
 
     while (!next_level.empty()) {
         // A bit vector for this level that marks whether the specific block is internal (= 1) or not (= 0).
-        sdsl::bit_vector *is_internal_block = new sdsl::bit_vector(current_level.size(), 0);
+        auto *is_internal_block = new sdsl::bit_vector(current_level.size(), 0);
 
         int number_of_leaves = 0;
         // Iterate through this level and update each block's level index (this block's index inside the current level),
@@ -190,11 +215,9 @@ CBlockTree::CBlockTree(BlockTree *bt) : arity_(bt->arity_), root_arity_(bt->root
         for (int i = 0; i < current_level.size(); ++i) {
             current_level[i]->level_index_ = i;
 
+            (*is_internal_block)[i] = !current_level[i]->is_leaf();
             if (current_level[i]->is_leaf()) {
-                (*is_internal_block)[i] = 0;
                 ++number_of_leaves;
-            } else {
-                (*is_internal_block)[i] = 1;
             }
         }
 
@@ -206,7 +229,7 @@ CBlockTree::CBlockTree(BlockTree *bt) : arity_(bt->arity_), root_arity_(bt->root
         // Add the offsets for this level to the tree
         offsets_.push_back(offsets);
 
-        // Compress the first block pop counts and add them to the tree for each characters
+        // Compress the first block pop counts and add them to the tree for each character
         for (auto &[character, pop_counts] : first_block_pop_counts) {
             sdsl::util::bit_compress(*pop_counts);
             (first_block_pop_counts_[character]).push_back(pop_counts);
@@ -253,6 +276,15 @@ CBlockTree::CBlockTree(BlockTree *bt) : arity_(bt->arity_), root_arity_(bt->root
 
     for (int i = 0; i < (*leaf_string_).size(); ++i) {
         (*leaf_string_)[i] = mapping_[leaf_string[i]];
+    }
+
+    // Generate data for fast substring queries
+    if (prefix_suffix_size_ > 0) {
+        Level level = lowest_complete_level;
+        while (!level.empty()) {
+            fill_fast_substring_data(this, level);
+            level = bt->next_level(level);
+        }
     }
 
     sdsl::util::bit_compress(*leaf_string_);
@@ -326,6 +358,10 @@ CBlockTree::~CBlockTree() {
         delete offsets;
     }
 
+    for (sdsl::int_vector<> *symbols : prefix_suffix_symbols_) {
+        delete symbols;
+    }
+
     delete leaf_string_;
     delete alphabet_;
 
@@ -334,13 +370,13 @@ CBlockTree::~CBlockTree() {
             delete pair.second;
         }
 
-        for (auto pair : pop_counts_) {
+        for (const auto &pair : pop_counts_) {
             for (sdsl::int_vector<> *ranks : pair.second) {
                 delete ranks;
             }
         }
 
-        for (auto pair : first_block_pop_counts_) {
+        for (const auto &pair : first_block_pop_counts_) {
             for (sdsl::int_vector<> *ranks : pair.second) {
                 delete ranks;
             }
@@ -376,42 +412,42 @@ int CBlockTree::access(int i) const {
 
 int CBlockTree::rank(int c, int i) const {
 
-    auto &ranks        = pop_counts_[c];
-    auto &second_ranks = first_block_pop_counts_[c];
+    auto &ranks        = pop_counts_.at(c);
+    auto &second_ranks = first_block_pop_counts_.at(c);
 
     int current_block  = i / lowest_complete_level_block_size_;
     int current_length = lowest_complete_level_block_size_;
     i                  = i - current_block * current_length;
     int level          = 0;
 
-    int r = (*lowest_complete_level_ranks_[c])[current_block];
+    int r = (*lowest_complete_level_ranks_.at(c))[current_block];
     while (level < number_of_levels_ - 1) {
         if ((*is_internal_[level])[current_block]) { // Case InternalBlock
             current_length /= arity_;
             int child_number = i / current_length;
             i -= child_number * current_length;
 
-            int firstChild = (*is_internal_ranks_[level])(current_block) *arity_;
+            int firstChild = (*is_internal_ranks_.at(level))(current_block) *arity_;
             for (int child = firstChild; child < firstChild + child_number; ++child) r += (*ranks[level + 1])[child];
             current_block = firstChild + child_number;
             ++level;
         } else { // Case BackBlock
             int index          = current_block - (*is_internal_ranks_[level])(current_block + 1);
-            int encoded_offset = (*offsets_[level])[index];
+            int encoded_offset = (*offsets_.at(level))[index];
             current_block      = encoded_offset / current_length;
             i += encoded_offset % current_length;
-            r += (*second_ranks[level])[index];
+            r += (*second_ranks.at(level))[index];
             if (i >= current_length) {
                 ++current_block;
                 i -= current_length;
             } else {
-                r -= (*ranks[level])[current_block];
+                r -= (*ranks.at(level))[current_block];
             }
         }
     }
 
     i += current_block * current_length;
-    int d = mapping_[c];
+    int d = mapping_.at(c);
     for (int j = current_block * current_length; j <= i; ++j) {
         if ((*leaf_string_)[j] == d)
             ++r;
@@ -422,13 +458,13 @@ int CBlockTree::rank(int c, int i) const {
 
 int CBlockTree::select(int c, int k) const {
 
-    auto &ranks                    = pop_counts_[c];
-    auto &second_ranks             = first_block_pop_counts_[c];
-    auto &first_level_prefix_ranks = lowest_complete_level_ranks_[c];
+    auto &ranks                    = pop_counts_.at(c);
+    auto &second_ranks             = first_block_pop_counts_.at(c);
+    auto &first_level_prefix_ranks = lowest_complete_level_ranks_.at(c);
 
     int current_block = (k - 1) / lowest_complete_level_block_size_;
 
-    int end_block = (*first_level_prefix_ranks).size() - 1;
+    int end_block = first_level_prefix_ranks->size() - 1;
     while (current_block != end_block) {
         int m = current_block + (end_block - current_block) / 2;
         int f = (*first_level_prefix_ranks)[m];
@@ -482,7 +518,7 @@ int CBlockTree::select(int c, int k) const {
         }
     }
 
-    int d = mapping_[c];
+    int d = mapping_.at(c);
     for (int j = current_block * current_length;; ++j) {
         if ((*leaf_string_)[j] == d)
             --k;
@@ -522,7 +558,7 @@ int CBlockTree::get_partial_size() const {
 int CBlockTree::size() const {
 
     int bt_ranks_total_size = (pop_counts_.size() + 1) * sizeof(void *);
-    for (auto pair : pop_counts_) {
+    for (const auto &pair : pop_counts_) {
         int size = 0;
         for (sdsl::int_vector<> *ranks : pair.second) {
             size += sdsl::size_in_bytes(*ranks);
@@ -531,12 +567,12 @@ int CBlockTree::size() const {
     }
 
     int bt_prefix_ranks_first_level_size = 0;
-    for (auto pair : lowest_complete_level_ranks_) {
+    for (const auto &pair : lowest_complete_level_ranks_) {
         bt_prefix_ranks_first_level_size += sdsl::size_in_bytes(*(pair.second));
     }
 
     int bt_second_ranks_total_size = (first_block_pop_counts_.size() + 1) * sizeof(void *);
-    for (auto pair : first_block_pop_counts_) {
+    for (const auto &pair : first_block_pop_counts_) {
         int size = 0;
         for (sdsl::int_vector<> *ranks : pair.second) {
             size += sdsl::size_in_bytes(*ranks);
@@ -571,17 +607,17 @@ void CBlockTree::serialize(std::ostream &out) const {
 
     if (rank_select_support_) {
         for (int character : (*alphabet_)) {
-            (*lowest_complete_level_ranks_[character]).serialize(out);
+            (*lowest_complete_level_ranks_.at(character)).serialize(out);
         }
 
         for (int character : (*alphabet_)) {
-            for (sdsl::int_vector<> *ranks : pop_counts_[character]) {
+            for (sdsl::int_vector<> *ranks : pop_counts_.at(character)) {
                 (*ranks).serialize(out);
             }
         }
 
         for (int character : (*alphabet_)) {
-            for (sdsl::int_vector<> *second_ranks : first_block_pop_counts_[character]) {
+            for (sdsl::int_vector<> *second_ranks : first_block_pop_counts_.at(character)) {
                 (*second_ranks).serialize(out);
             }
         }

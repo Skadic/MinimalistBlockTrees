@@ -13,9 +13,9 @@ using Arity            = int;
 using RootArity        = int;
 using MaxLeafLength    = int;
 using PrefixSuffixSize = int;
-using SourceText       = std::string;
+using InputText        = std::string;
 
-using TestParameters = ::testing::tuple<Arity, RootArity, MaxLeafLength, PrefixSuffixSize, SourceText>;
+using TestParameters = ::testing::tuple<Arity, RootArity, MaxLeafLength, PrefixSuffixSize, InputText>;
 
 class BlockTreeFixture : public ::testing::TestWithParam<TestParameters> {
   protected:

@@ -23,7 +23,8 @@ BlockTree::BlockTree(const std::string &input,
     arity_(arity),
     root_arity_(root_block_arity),
     input_(input),
-    leaf_length_(leaf_length) {
+    leaf_length_(leaf_length),
+    prefix_suffix_size_(0) {
 
     // If a leaf is supposed to be greater than the text, or if the arity is greater than the text is long, just make
     // the entire tree one leaf node
@@ -72,7 +73,9 @@ BlockTree::~BlockTree() { delete root_block_; }
 
 void BlockTree::add_fast_substring_support(const int prefix_suffix_size) {
     prefix_suffix_size_ = prefix_suffix_size;
-    root_block_->add_fast_substring_support(prefix_suffix_size);
+    if (prefix_suffix_size > 0) {
+        root_block_->add_fast_substring_support(prefix_suffix_size);
+    }
 }
 
 void BlockTree::add_rank_select_support(int c) const { root_block_->add_rank_select_support(c); }
@@ -100,6 +103,20 @@ std::vector<Level> BlockTree::levelwise_iterator() const {
     }
 
     return result;
+}
+
+auto BlockTree::get_lowest_complete_level() -> const std::pair<Level, size_t> {
+    Level  current_level = {this->root_block_};
+    size_t i             = 0;
+    while (true) {
+        for (Block *b : current_level) {
+            if (b->is_leaf()) {
+                return {current_level, i};
+            }
+        }
+        i++;
+        current_level = this->next_level(current_level);
+    }
 }
 
 void BlockTree::clean_unnecessary_expansions() {

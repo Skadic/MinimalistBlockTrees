@@ -16,10 +16,12 @@ class CBlockTree {
     int root_arity_;
     /// The block size of the blocks in the lowest complete level of this tree.
     int lowest_complete_level_block_size_;
-    /// The number of levels in this tree.
+    /// The number of levels in this tree starting at the lowest complete.
     int number_of_levels_;
     /// Whether this tree is built with rank select support.
     bool rank_select_support_;
+    /// The number of characters in the input string;
+    size_t input_size;
 
     /// For each level l, stores a bitvector B,
     /// where B[j] == 1 if the block at index j on level l is an internal block
@@ -44,10 +46,14 @@ class CBlockTree {
     /// This is transformed by the `mapping_`
     sdsl::int_vector<> *leaf_string_;
 
-    /// Contains the first and last log_sigma(n) symbols of each node of each level
-    /// one int_vector contains the first log_sigma(n) symbols of node 0, then the last log_sigma(n) symbols of node 0,
-    /// then the first log_sigma(n) symbols of node 1, and so on.
-    std::vector<sdsl::int_vector<> *> start_end_symbols_;
+    /// The size of the prefixes and suffixes of a block's represented string. This is saved for every block larger than
+    /// this value, allowing fast substring queries.
+    uint32_t prefix_suffix_size_;
+
+    /// Contains the first and last prefix_suffix_size_ symbols of each node of each level.
+    /// One int_vector contains the first prefix_suffix_size_ symbols of node 0,
+    /// then the last prefix_suffix_size_ symbols of node 0, then the first log_sigma(n) symbols of node 1, and so on.
+    std::vector<sdsl::int_vector<> *> prefix_suffix_symbols_;
 
     /// Maps an integer code number to the character it represents
     sdsl::int_vector<> *alphabet_;

@@ -30,11 +30,10 @@ void Block::add_fast_substring_support(const int prefix_suffix_size) {
     if (len < prefix_suffix_size) {
         prefix_ = std::string_view(input_.begin() + start_index_, suffix_end);
         suffix_ = std::string_view(input_.begin() + start_index_, suffix_end);
-        return;
+    } else {
+        prefix_ = std::string_view(input_.begin() + start_index_, prefix_end);
+        suffix_ = std::string_view(input_.begin() + end_index_ - prefix_suffix_size + 1, suffix_end);
     }
-
-    prefix_ = std::string_view(input_.begin() + start_index_, prefix_end);
-    suffix_ = std::string_view(input_.begin() + end_index_ - prefix_suffix_size + 1, suffix_end);
 
     for (Block *child : children_) {
         child->add_fast_substring_support(prefix_suffix_size);

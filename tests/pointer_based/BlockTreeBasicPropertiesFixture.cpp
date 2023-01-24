@@ -19,12 +19,12 @@ using Arity            = int;
 using RootArity        = int;
 using MaxLeafLength    = int;
 using PrefixSuffixSize = int;
-using SourceText       = std::string;
+using InputText        = std::string;
 
-typedef BlockTree *CreateBlockTreeFunc(Arity, RootArity, MaxLeafLength, PrefixSuffixSize, SourceText);
+typedef BlockTree *CreateBlockTreeFunc(Arity, RootArity, MaxLeafLength, PrefixSuffixSize, InputText);
 
 using TestParameters =
-    ::testing::tuple<Arity, RootArity, MaxLeafLength, PrefixSuffixSize, SourceText, CreateBlockTreeFunc *>;
+    ::testing::tuple<Arity, RootArity, MaxLeafLength, PrefixSuffixSize, InputText, CreateBlockTreeFunc *>;
 
 BlockTree *block_tree(int arity, int root_arity, int max_leaf_length, int prefix_suffix_size, std::string input) {
     BlockTree *block_tree_ = new BlockTree(input, arity, root_arity, max_leaf_length);
@@ -64,7 +64,7 @@ class BlockTreeBasicPropertiesFixture : public ::testing::TestWithParam<TestPara
 
     BlockTreeBasicPropertiesFixture() : ::testing::TestWithParam<TestParameters>() {}
 
-    virtual ~BlockTreeBasicPropertiesFixture() {}
+    ~BlockTreeBasicPropertiesFixture() override {}
 
   protected:
     virtual void TearDown() {
@@ -101,17 +101,17 @@ class BlockTreeBasicPropertiesFixture : public ::testing::TestWithParam<TestPara
     }
 };
 
-INSTANTIATE_TEST_CASE_P(AllVariantsTest,
-                        BlockTreeBasicPropertiesFixture,
-                        Combine(Values(2),
-                                Values(8),
-                                Values(4),
-                                Values(16),
-                                Values("../../../tests/data/as",
-                                       "../../../tests/data/dna",
-                                       "../../../tests/data/dna.par",
-                                       "../../../tests/data/einstein"),
-                                Values(&block_tree, &block_tree_without_cleaning, &heuristic_block_tree)));
+INSTANTIATE_TEST_SUITE_P(AllVariantsTest,
+                         BlockTreeBasicPropertiesFixture,
+                         Combine(Values(2),
+                                 Values(8),
+                                 Values(4),
+                                 Values(16),
+                                 Values("../../../tests/data/as",
+                                        "../../../tests/data/dna",
+                                        "../../../tests/data/dna.par",
+                                        "../../../tests/data/einstein"),
+                                 Values(&block_tree, &block_tree_without_cleaning, &heuristic_block_tree)));
 
 // This test checks if the parameters given to the tree
 // are the same inside the components of the BlockTree
@@ -128,7 +128,7 @@ TEST_P(BlockTreeBasicPropertiesFixture, parameters_check) {
 }
 
 // This test checks if the internal nodes of the PBlockTree
-// have r_ children except the last of each level
+// have arity_ children except the last of each level
 TEST_P(BlockTreeBasicPropertiesFixture, almost_always_r_children_property_check) {
     bool is_root_level = true;
     for (std::vector<Block *> level : block_tree_->levelwise_iterator()) {
@@ -177,20 +177,13 @@ TEST_P(BlockTreeBasicPropertiesFixture, input_integrity_or_access_check) {
 TEST_P(BlockTreeBasicPropertiesFixture, prefix_suffix_integrity_check) {
     std::string_view expected_view;
     std::string_view actual_view;
-
     std::queue<Block *> blocks;
     blocks.push(block_tree_->root_block_);
 
     while (!blocks.empty()) {
         Block *block = blocks.front();
         blocks.pop();
-        // if (dynamic_cast<LeafBlock *>(block)) {
-        //     EXPECT_TRUE(block->prefix_.empty()) << "A leaf block should not save a prefix.";
-        //     EXPECT_TRUE(block->suffix_.empty()) << "A leaf should not save a suffix.";
-        //     continue;
-        // }
 
-        // std::cout << "ANFANG " << block->prefix_suffix_ << " ENDE" << std::endl;
         //  For each internal block, get the range it represents.
         const int start       = block->start_index_;
         const int end         = block->end_index_;

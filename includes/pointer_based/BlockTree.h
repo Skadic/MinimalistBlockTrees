@@ -50,9 +50,9 @@ class BlockTree {
     const int root_arity_;
     /// The maximum length of a leaf node.
     const int leaf_length_;
-    /// The size of the prefixes and suffixes of a block's represented string. This is saved for every internal block,
-    /// allowing fast substring queries.
-    int prefix_suffix_size_;
+    /// The size of the prefixes and suffixes of a block's represented string. This is saved for every block larger than
+    /// this value, allowing fast substring queries.
+    int prefix_suffix_size_{};
     /// Input sequence of the Tree
     const std::string input_;
     /// The root block
@@ -225,6 +225,18 @@ class BlockTree {
     /// @brief Prints this blocktree to the console
     ///
     void print();
+
+    ///
+    /// @brief Gets the lowest level of the given block tree that is not fully comprised of internal blocks.
+    ///
+    /// In other words, this returns the lowest level of the block tree that is still *complete* in the sense that there
+    /// are no gaps in the level where blocks are missing.
+    ///
+    /// @param bt The uncompressed pointer-based block tree
+    /// @return A vector of pointers pointing to the blocks of the lowest complete level of the given block tree in
+    /// order from left to right along with the level's index..
+    ///
+    const std::pair<Level, size_t> get_lowest_complete_level();
 };
 
 #endif // BLOCKTREE_PBLOCKTREE_H
