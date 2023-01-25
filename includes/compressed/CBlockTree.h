@@ -90,7 +90,15 @@ class CBlockTree {
     /// @param index An index in the input text.
     /// @return The character at the given index in the input text.
     ///
-    int access(int i) const;
+    [[nodiscard]] int access(int i) const;
+
+    /// @brief Copy the substring at an index and of the given length into a buffer.
+    ///
+    /// @param buf The buffer to write to.
+    /// @param index The index to read from.
+    /// @param len The length of the substring to copy
+    /// @return The position of the buffer after the written string
+    char *substr(char *buf, size_t index, size_t len) const;
 
     ///
     /// @brief Gets the number the given character's occurrences up to an index.
@@ -112,6 +120,10 @@ class CBlockTree {
     [[nodiscard]] int size() const;
     [[nodiscard]] int get_partial_size() const;
     void              serialize(std::ostream &character) const;
+
+  private:
+    [[nodiscard("for internal calls the buffer should be adjusted")]] char *
+    substr_internal(char *buf, size_t index, size_t len) const;
 };
 
 #endif // BLOCKTREE_PCBLOCKTREE_H

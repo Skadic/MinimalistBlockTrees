@@ -1,5 +1,6 @@
 #include <compressed/CBlockTree.h>
 #include <pointer_based/BlockTree.h>
+#include <ranges>
 #include <unordered_set>
 #include <vector>
 
@@ -170,14 +171,11 @@ void fill_fast_substring_data(CBlockTree *cbt, const Level &level) {
             symbols[block_index * saved_data_per_block + i] = cbt->mapping_[prefix[i]];
         }
 
-        // We don't need the suffix if it's the last block of the level
-        // It's likely to be incomplete anyway
-        if (block_index == level_size - 1) {
-            continue;
-        }
-
         for (size_t i = 0; i < saved_data_per_block >> 1; ++i) {
-            symbols[block_index * saved_data_per_block + prefix.size() + i] = cbt->mapping_[suffix[i]];
+            // Get the char from the suffix. If a char does not exist there, fill up the rest with garbage
+            // This can only happen for the last block of a level so the space consumed by this is insignificant
+            const auto suffix_char                                          = i < suffix.size() ? suffix[i] : prefix[0];
+            symbols[block_index * saved_data_per_block + prefix.size() + i] = cbt->mapping_[suffix_char];
         }
     }
     sdsl::util::bit_compress(symbols);
@@ -192,6 +190,8 @@ CBlockTree::CBlockTree(BlockTree *bt) :
     input_size(bt->input_.size()) {
     using namespace cbt_util;
 
+    // Get the lowest level in the block tree that has no "gaps"
+    // This will de-facto become the first level below the root
     const auto [lowest_complete_level, _] = bt->get_lowest_complete_level();
 
     // Populate the rank values in the lowest level of the tree that is still complete (i.e. there are no blocks
@@ -269,6 +269,7 @@ CBlockTree::CBlockTree(BlockTree *bt) :
         mapping_[c]             = counter;
         (*alphabet_)[counter++] = c;
     }
+
     sdsl::util::bit_compress(*alphabet_);
 
     // make the leaf string an int vector
@@ -408,6 +409,131 @@ int CBlockTree::access(int i) const {
         }
     }
     return (*alphabet_)[(*leaf_string_)[i + current_block * current_length]];
+}
+
+char *CBlockTree::substr_internal(char *buf, size_t index, size_t len) const {
+    char  *dbgbuf         = buf;
+    size_t current_block  = index / lowest_complete_level_block_size_;
+    size_t current_length = lowest_complete_level_block_size_;
+    // Make the index local to the block we are in
+    index -= current_block * lowest_complete_level_block_size_;
+    size_t level                      = 0;
+    size_t current_prefix_suffix_size = std::min(current_length, (size_t) prefix_suffix_size_);
+    size_t saved_data_per_block =
+        current_length <= prefix_suffix_size_ ? current_length : 2 * current_prefix_suffix_size;
+
+    while (level < number_of_levels_ - 1) {
+        // If the substring is part of this block's prefix, we can just read it from there
+        if (index + len <= prefix_suffix_size_) {
+            const size_t substr_start_index_ = current_block * saved_data_per_block + index;
+            for (size_t i = 0; i < len; ++i) {
+                const uint16_t unmapped_symbol = (*prefix_suffix_symbols_[level])[substr_start_index_ + i];
+                *buf++                         = (*alphabet_)[unmapped_symbol];
+            }
+            return buf;
+        }
+
+        // If the substring is part of this block's suffix, we can just read it from there
+        if (index >= current_length - current_prefix_suffix_size && index + len <= current_length) {
+            // Make the index local to the suffix
+            index -= current_length - current_prefix_suffix_size;
+            // We can assume that the block is actually larger than prefix_suffix_size_ at this point and therefore, the
+            // prefix and suffix are distinct and saved separately. Because if the block was smaller than
+            // prefix_suffix_size_ the prefix and suffix would be identical and only saved once.
+            // In that case, we would have already entered the previous if statement and returned
+            const size_t suffix_offset      = saved_data_per_block - current_prefix_suffix_size;
+            const size_t substr_start_index = current_block * saved_data_per_block + suffix_offset + index;
+            for (size_t i = 0; i < len; ++i) {
+                const size_t unmapped_symbol = (*prefix_suffix_symbols_[level])[substr_start_index + i];
+                *buf++                       = (*alphabet_)[unmapped_symbol];
+            }
+            return buf;
+        }
+
+        // In this case we are crossing a block boundary
+        if (index + len > current_length) {
+            // Make the index local to the suffix
+            index -= current_length - prefix_suffix_size_;
+            // If this block is smaller than the prefix_suffix_size then the suffix (= prefix) has no offset
+            // Otherwise it is saved after prefix
+            const volatile size_t suffix_offset = saved_data_per_block - prefix_suffix_size_;
+            // The substring starts in this block's suffix
+            const volatile size_t substr_start_index = current_block * saved_data_per_block + suffix_offset + index;
+            // Read the string from this block's suffix and the next block's prefix
+            // Since they are contiguous in memory, read them in one go
+            for (int i = 0; i < len; ++i) {
+                const uint16_t unmapped_symbol = (*prefix_suffix_symbols_[level])[substr_start_index + i];
+                *buf++                         = (*alphabet_)[unmapped_symbol];
+            }
+            return buf;
+        }
+
+        // The number of blocks for which information is stored
+        // If at some index only back blocks follow, they aren't explicitly saved
+        const auto num_internal_bits = is_internal_[level]->size();
+
+        // If none of the previous cases apply, the substring is entirely contained in a child block
+        // If we are in an internal block, we just go to that child
+        // If we are in a back block, we first need to go to its source
+        if (current_block < num_internal_bits && (*is_internal_[level])[current_block]) { // Case Internal Block
+            /*
+            const auto old_block_start_index = current_block * current_length;
+            current_length /= arity_;
+            // The index of the first child block in its level
+            const auto first_child_index = old_block_start_index / current_length;
+            current_block                = first_child_index + index / current_length;
+            // Make the index internal to the new block
+            index -= current_block * current_length - old_block_start_index;
+            */
+            current_length /= arity_;
+            int child_number = index / current_length;
+            index -= child_number * current_length;
+            current_block = (*is_internal_ranks_[level])(current_block) *arity_ + child_number;
+
+            current_prefix_suffix_size = std::min(current_length, current_prefix_suffix_size);
+            saved_data_per_block =
+                current_length <= prefix_suffix_size_ ? current_length : 2 * current_prefix_suffix_size;
+            level++;
+            continue;
+        } else { // Case Back Block
+            auto rank = (*is_internal_ranks_[level])(std::min(current_block + 1, num_internal_bits));
+            // Find the position of this block's source
+            int encoded_offset = (*offsets_[level])[current_block - rank];
+            current_block      = encoded_offset / current_length;
+            index += encoded_offset % current_length;
+            if (index >= current_length) {
+                index -= current_length;
+                current_block++;
+            }
+        }
+    }
+    // If we made it here without returning, we must be in a leaf
+    // So just read from the leaf string
+    const size_t start_in_leaf = index + current_block * current_length;
+    for (int i = 0; i < len; ++i) {
+        *buf++ = (*alphabet_)[(*leaf_string_)[start_in_leaf + i]];
+    }
+    return buf;
+}
+
+char *CBlockTree::substr(char *buf, const size_t index, const size_t len) const {
+    char *dbgbuf = buf;
+    // This is the number of prefix/suffix characters saved in the lowest complete level of the tree
+    const size_t saved_data = lowest_complete_level_block_size_ < prefix_suffix_size_
+                                  ? lowest_complete_level_block_size_
+                                  : prefix_suffix_size_;
+    // The number of complete chunks that fit in len
+    const size_t complete_chunks = len / saved_data;
+    for (int i = 0; i < complete_chunks; ++i) {
+        buf = this->substr_internal(buf, index + i * saved_data, saved_data);
+    }
+
+    const size_t characters_extracted = complete_chunks * saved_data;
+    // In this case there is a rest of the string we have not extracted yet
+    if (characters_extracted < len) {
+        buf = substr_internal(buf, index + characters_extracted, len - characters_extracted);
+    }
+    return buf;
 }
 
 int CBlockTree::rank(int c, int i) const {
@@ -552,7 +678,13 @@ int CBlockTree::get_partial_size() const {
         bt_offsets_size += sdsl::size_in_bytes(*offsets);
     }
 
-    return fields + mapping_size + alphabet_size + bt_bv_size + bt_bv_rank_size + bt_offsets_size + leaf_string_size;
+    int prefix_suffix_size = sizeof(void *);
+    for (sdsl::int_vector<> *symbols : prefix_suffix_symbols_) {
+        prefix_suffix_size += sdsl::size_in_bytes(*symbols);
+    }
+
+    return fields + mapping_size + alphabet_size + bt_bv_size + bt_bv_rank_size + bt_offsets_size + leaf_string_size +
+           prefix_suffix_size;
 }
 
 int CBlockTree::size() const {

@@ -11,8 +11,8 @@ endforeach()
 
 
 foreach( exe ${test_NAMES} )
-    target_link_libraries( check_${exe} gtest gtest_main)
-    target_link_libraries( check_${exe} blocktree )
+    target_link_libraries(check_${exe} GTest::GTest GTest::Main)
+    target_link_libraries(check_${exe} blocktree)
 endforeach()
 
 include(GoogleTest)

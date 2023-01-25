@@ -352,6 +352,34 @@ TEST_P(CBlockTreeFixture, input_integrity_or_access_check) {
     for (int i = 0; i < input_.size(); ++i) EXPECT_EQ(c_block_tree_->access(i), input_[i]);
 }
 
+/// Test substr method on substrings larger than the prefixes and suffixes stored in the blocks
+TEST_P(CBlockTreeFixture, substr_larger_check) {
+    constexpr size_t size = 50;
+    char             buf[size + 1];
+
+    for (size_t i = 0; i < input_.size() - size; i++) {
+        std::ranges::fill(buf, 0);
+        c_block_tree_->substr(buf, i, size);
+        std::string_view actual   = {buf};
+        std::string_view expected = {input_.begin() + i, input_.begin() + i + size};
+        ASSERT_EQ(expected, actual) << "incorrect substring at index " << i;
+    }
+}
+
+/// Test substr method on substrings smaller than the prefixes and suffixes stored in the blocks
+TEST_P(CBlockTreeFixture, substr_smaller_check) {
+    constexpr size_t size = 2;
+    char             buf[size + 1];
+
+    for (size_t i = 99000; i < input_.size() - size; i++) {
+        std::ranges::fill(buf, 0);
+        c_block_tree_->substr(buf, i, size);
+        std::string_view actual   = {buf};
+        std::string_view expected = {input_.begin() + i, input_.begin() + i + size};
+        ASSERT_EQ(expected, actual) << "incorrect substring at index " << i;
+    }
+}
+
 // This test checks the rank method for every character
 // and position in the input
 TEST_P(CBlockTreeFixture, ranks_check) {
