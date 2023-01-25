@@ -51,12 +51,15 @@ Let's suppose we want to build a BlockTree, so we do:
 ```cpp
 ...
 std::string input = "AACCCTGCTGCTGATCGGATCGTAGC";
-int r = 2; //The arity of the BlockTree
-int ll = 16; // The length of the strings represented by the leaves of the BlockTree
+int arity = 2; // The arity of the BlockTree
+int root_arity = 8; // The arity of the BlockTree's root block
+int leaf_len = 16; // The length of the strings represented by the leaves of the BlockTree
+bool process = false; // Whether the BlockTree should be immediately constructed (default=false)
+bool rs_support = false; // Whether to build the BlockTree with rank/select support (default=false)
 
-BlockTree* bt = new BlockTree(input, r, mll); // This creates the BlockTree object, a pointer-based implementation
-bt->process_back_pointers(); // This method builds the BackPointers in the BlockTree
-bt->clean_unnecessary_expansions(); // This method removes the expansion of InternalBlocks that are unnecesary (this is also called pruning)
+BlockTree* bt = new BlockTree(input, arity, root_arity, leaf_len, process, rs_support); // This creates the BlockTree object, a pointer-based implementation
+bt->process_back_pointers(); // This method constructs the BackPointers in the BlockTree. Unncessary if process == true
+bt->clean_unnecessary_expansions(); // This method removes the expansion of InternalBlocks that are unnecesary (this is also called pruning). Unncessary if process == true
  ...
 ```
 
@@ -74,6 +77,8 @@ if you want to give it `bt->rank(c,i) & bt->select(c,j)` support you should do:
 for (int c: characters)
     bt->add_rank_select_support(c);
 ```
+
+This is only necessary if `rs_support` was set to `false` before.
 
 The above is a pointer-based implementation of BlockTrees,
 if you want to have a more compact representation
