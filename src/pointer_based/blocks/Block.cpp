@@ -13,7 +13,9 @@ Block::Block(Block *parent, int64_t start_index, int64_t end_index, const std::s
     pointing_to_me_(0),
     level_index_(0),
     offset_(0),
-    first_occurrence_level_index_(0) {}
+    first_occurrence_level_index_(0),
+    prefix_(std::string_view()),
+    suffix_(std::string_view()) {}
 
 Block::~Block() = default;
 
@@ -31,8 +33,13 @@ void Block::add_fast_substring_support(const int prefix_suffix_size) {
         prefix_ = std::string_view(input_.begin() + start_index_, suffix_end);
         suffix_ = std::string_view(input_.begin() + start_index_, suffix_end);
     } else {
-        prefix_ = std::string_view(input_.begin() + start_index_, prefix_end);
-        suffix_ = std::string_view(input_.begin() + end_index_ - prefix_suffix_size + 1, suffix_end);
+        prefix_                 = std::string_view(input_.begin() + start_index_, prefix_end);
+        const auto suffix_start = input_.begin() + end_index_ - prefix_suffix_size + 1;
+        // Only set the suffix if its start is before its end (which is the usual case)
+        // This happens if the suffix would start beyond the input string's end
+        if (std::distance(suffix_start, suffix_end) >= 0) {
+            suffix_ = std::string_view(suffix_start, suffix_end);
+        }
     }
 
     for (Block *child : children_) {

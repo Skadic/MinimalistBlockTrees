@@ -142,7 +142,7 @@ char *InternalBlock::substr(char *buf, const int index, const int len) const {
         return buf + len;
     }
 
-    // If the substring is part of this block's prefix, we can just read it from there
+    // If the substring is part of this block's suffix, we can just read it from there
     if (index >= length() - suffix_.size()) {
         const size_t suffix_start_index = length() - suffix_.size();
         const size_t start_in_suffix    = index - suffix_start_index;
