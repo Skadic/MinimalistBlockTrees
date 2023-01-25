@@ -436,7 +436,7 @@ TEST_P(BlockTreeBasicPropertiesFixture, second_ranks_field_check) {
             if (dynamic_cast<BackBlock *>(b)) {
                 std::unordered_map<int, int> first_ranks;
                 std::unordered_map<int, int> second_ranks;
-                for (auto pair : b->pop_counts_in_first_block_) second_ranks[pair.second] = 0;
+                for (auto pair : b->first_block_pop_counts_) second_ranks[pair.second] = 0;
                 int i = b->first_block_->start_index_;
                 for (; i < b->first_block_->start_index_ + b->offset_; ++i)
                     first_ranks[input_[i]] = first_ranks[input_[i]] + 1;
@@ -445,7 +445,7 @@ TEST_P(BlockTreeBasicPropertiesFixture, second_ranks_field_check) {
                     second_ranks[input_[i]] = second_ranks[input_[i]] + 1;
 
                 for (auto pair : second_ranks)
-                    EXPECT_EQ(second_ranks[pair.first], b->pop_counts_in_first_block_[pair.first]);
+                    EXPECT_EQ(second_ranks[pair.first], b->first_block_pop_counts_[pair.first]);
             }
         }
     }

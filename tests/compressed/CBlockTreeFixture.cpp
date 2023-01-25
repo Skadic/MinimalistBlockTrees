@@ -230,7 +230,7 @@ TEST_P(CBlockTreeFixture, first_block_pop_counts_check) {
             int l = 0;
             for (Block *b : level) {
                 if (dynamic_cast<BackBlock *>(b)) {
-                    EXPECT_EQ(level_first_block_pop_counts[l], b->pop_counts_in_first_block_[c]);
+                    EXPECT_EQ(level_first_block_pop_counts[l], b->first_block_pop_counts_[c]);
                     ++l;
                 }
             }

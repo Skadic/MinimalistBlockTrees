@@ -54,7 +54,7 @@ int BackBlock::add_rank_select_support(const int c) {
     int second_rank = (second_block_ == nullptr) ? first_block_->rank(c, offset_ + length() - 1) - first_rank
                                                  : first_block_->rank(c, first_block_->length() - 1) - first_rank;
     // Insert the number of times c appears in the part of the source that lies in first_block_
-    pop_counts_in_first_block_[c] = second_rank;
+    first_block_pop_counts_[c] = second_rank;
     // Insert the number of times c appears in this block in total
     // If there is no second block, then second_rank already contains the answer
     // If there is, the ne need to add the number of times c appears in the second block
@@ -66,17 +66,17 @@ int BackBlock::add_rank_select_support(const int c) {
 
 int BackBlock::rank(const int c, const int i) const {
     if (i + offset_ >= first_block_->length()) {
-        return pop_counts_in_first_block_.at(c) +
+        return first_block_pop_counts_.at(c) +
                second_block_->rank(c, offset_ + i - first_block_->length()); // Loop if it's itself
     }
-    return first_block_->rank(c, i + offset_) - (first_block_->pop_counts_[c] - pop_counts_in_first_block_.at(c));
+    return first_block_->rank(c, i + offset_) - (first_block_->pop_counts_[c] - first_block_pop_counts_.at(c));
 }
 
 int BackBlock::select(const int c, const int j) const {
-    if (j > pop_counts_in_first_block_.at(c)) {
-        return second_block_->select(c, j - pop_counts_in_first_block_.at(c)) + first_block_->length() - offset_;
+    if (j > first_block_pop_counts_.at(c)) {
+        return second_block_->select(c, j - first_block_pop_counts_.at(c)) + first_block_->length() - offset_;
     }
-    return first_block_->select(c, j + first_block_->pop_counts_[c] - pop_counts_in_first_block_.at(c)) - offset_;
+    return first_block_->select(c, j + first_block_->pop_counts_[c] - first_block_pop_counts_.at(c)) - offset_;
 }
 
 int BackBlock::access(const int i) const {

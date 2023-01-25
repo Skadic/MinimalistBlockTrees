@@ -29,7 +29,7 @@ class Block {
     /// This is a `BackBlock`-specific field. `BackBlock`s point to a source to the left of them from which they copy
     /// characters. This source which may span one or two blocks. This stores how many times character c appears in the
     /// part of the source that lies in the *first block* it copies from.
-    std::unordered_map<int, int> pop_counts_in_first_block_;
+    std::unordered_map<int, int> first_block_pop_counts_;
 
     /// The first block of this block's source (if this is a back block)
     Block *first_block_;

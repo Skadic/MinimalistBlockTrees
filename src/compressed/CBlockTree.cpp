@@ -133,7 +133,7 @@ std::pair<Offsets *, PopCounts> offsets_and_first_block_pop_counts(const Level  
         // If the current block is not internal (i.e. is a leaf block or a back block)
         if (!is_internal_block[i]) {
             // This is now the j-th non-internal block on this level
-            for (const auto [character, first_block_pop_count] : current_level[i]->pop_counts_in_first_block_) {
+            for (const auto [character, first_block_pop_count] : current_level[i]->first_block_pop_counts_) {
                 (*first_block_pop_counts[character])[j] = first_block_pop_count;
             }
             // Calculate the offset from the start of the string from which this block copies.

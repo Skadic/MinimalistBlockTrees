@@ -240,7 +240,7 @@ TEST_P(CBitBlockTreeFixture, bt_second_ranks_field_check) {
         int l = 0;
         for (Block *b: level) {
             if (dynamic_cast<BackBlock *>(b)) {
-                EXPECT_EQ(level_bt_second_ranks[l], b->pop_counts_in_first_block_[one_symbol]) ;
+                EXPECT_EQ(level_bt_second_ranks[l], b->first_block_pop_counts_[one_symbol]);
                 ++l;
             }
         }

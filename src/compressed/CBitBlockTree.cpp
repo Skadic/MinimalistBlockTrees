@@ -75,7 +75,7 @@ CBitBlockTree::CBitBlockTree(BlockTree *bt, int one_symbol) : arity_(bt->arity_)
         int j = 0;
         for (int i = 0; i < current_level.size(); ++i) {
             if (!(*current_level_bv)[i]) {
-                for (auto pair : current_level[i]->pop_counts_in_first_block_) {
+                for (auto pair : current_level[i]->first_block_pop_counts_) {
                     if (pair.first == one_symbol) {
                         (*current_level_second_ranks)[j] = pair.second;
                     }
