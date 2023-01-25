@@ -60,7 +60,7 @@ class CBlockTree {
     /// Maps a character to an integer code number
     std::unordered_map<char, int> mapping_;
 
-    /// For the first level (corresponds to the first level in the original tree with no missing blocks) of the tree,
+    /// For the first level (corresponds to the lowest level in the original tree with no missing blocks) of the tree,
     /// saves the ranks up to (and not including) a specific block for each character.
     /// This maps character -> block index -> rank
     std::unordered_map<int, sdsl::int_vector<> *> first_level_ranks_;

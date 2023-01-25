@@ -14,12 +14,13 @@ using MaxLeafLength    = int;
 using PrefixSuffixSize = int;
 using InputText        = std::string;
 
-typedef BlockTree *CreateBlockTreeFunc(Arity, RootArity, MaxLeafLength, PrefixSuffixSize, std::string);
+typedef BlockTree *CreateBlockTreeFunc(Arity, RootArity, MaxLeafLength, PrefixSuffixSize, const InputText &);
 
 using TestParameters =
     ::testing::tuple<Arity, RootArity, MaxLeafLength, PrefixSuffixSize, InputText, CreateBlockTreeFunc *>;
 
-BlockTree *block_tree(int arity, int root_arity, int max_leaf_length, int prefix_suffix_size, std::string input) {
+BlockTree *
+block_tree(int arity, int root_arity, int max_leaf_length, int prefix_suffix_size, const std::string &input) {
     auto *block_tree_ = new BlockTree(input, arity, root_arity, max_leaf_length);
     block_tree_->process_block_tree();
     block_tree_->clean_unnecessary_expansions();
@@ -27,8 +28,11 @@ BlockTree *block_tree(int arity, int root_arity, int max_leaf_length, int prefix
     return block_tree_;
 }
 
-BlockTree *
-block_tree_without_cleaning(int arity, int root_arity, int max_leaf_length, int prefix_suffix_size, std::string input) {
+BlockTree *block_tree_without_cleaning(int                arity,
+                                       int                root_arity,
+                                       int                max_leaf_length,
+                                       int                prefix_suffix_size,
+                                       const std::string &input) {
     auto *block_tree_ = new BlockTree(input, arity, root_arity, max_leaf_length);
     block_tree_->process_block_tree();
     block_tree_->add_fast_substring_support(prefix_suffix_size);
@@ -36,7 +40,7 @@ block_tree_without_cleaning(int arity, int root_arity, int max_leaf_length, int 
 }
 
 BlockTree *
-heuristic_block_tree(int arity, int root_arity, int max_leaf_length, int prefix_suffix_size, std::string input) {
+heuristic_block_tree(int arity, int root_arity, int max_leaf_length, int prefix_suffix_size, const std::string &input) {
     auto *block_tree_ = new BlockTree(input, arity, root_arity, max_leaf_length);
     block_tree_->process_back_pointers_heuristic();
     block_tree_->add_fast_substring_support(prefix_suffix_size);
@@ -62,7 +66,17 @@ class CBlockTreeFixture : public ::testing::TestWithParam<TestParameters> {
     /// Characters in the input and its select results
     std::unordered_map<int, std::vector<int>> characters_;
 
-    CBlockTreeFixture() : ::testing::TestWithParam<TestParameters>() {}
+    CBlockTreeFixture() :
+        ::testing::TestWithParam<TestParameters>(),
+        block_tree_(nullptr),
+        block_tree_rs_(nullptr),
+        c_block_tree_(nullptr),
+        c_block_tree_rs_(nullptr),
+        input_(),
+        arity_(0),
+        root_arity_(0),
+        max_leaf_length_(0),
+        prefix_suffix_size_(0) {}
 
     ~CBlockTreeFixture() override = default;
 
@@ -137,61 +151,59 @@ TEST_P(CBlockTreeFixture, general_fields_check) {
     EXPECT_EQ(iterator.size() - i, c_block_tree_->number_of_levels_) << "Incorrect number of levels";
 }
 
-// This test checks if the CBlockTree has the same
-// structure that its correspondent BlockTree
-// in particular the bt_bv field is checked
-TEST_P(CBlockTreeFixture, bt_bv_field_check) {
+// This test checks if the CBlockTree has the same structure that its correspondent BlockTree in particular the
+// is_internal_ field is checked
+TEST_P(CBlockTreeFixture, is_internal_check) {
     auto iterator   = block_tree_->levelwise_iterator();
     auto [level, i] = block_tree_->get_lowest_complete_level();
 
     for (int j = 0; j < c_block_tree_->number_of_levels_ - 1; ++j) {
         level            = iterator[i + j];
-        auto level_bt_bv = *(c_block_tree_->is_internal_[j]);
-        EXPECT_EQ(level.size(), level_bt_bv.size());
+        auto is_internal = *(c_block_tree_->is_internal_[j]);
+        EXPECT_EQ(level.size(), is_internal.size());
         for (int k = 0; k < level.size(); ++k) {
             Block *b = level[k];
             if (dynamic_cast<BackBlock *>(b))
-                EXPECT_FALSE(level_bt_bv[k]);
+                EXPECT_FALSE(is_internal[k]);
             else
-                EXPECT_TRUE(level_bt_bv[k]);
+                EXPECT_TRUE(is_internal[k]);
         }
     }
 }
 
-// This test checks if the CBlockTree has the same
-// structure that its correspondent BlockTree
-// in particular the bt_offsets field is checked
-TEST_P(CBlockTreeFixture, bt_offsets_field_check) {
+// This test checks if the CBlockTree has the same structure that its correspondent BlockTree in particular the offsets_
+// field is checked
+TEST_P(CBlockTreeFixture, offsets_check) {
     auto iterator   = block_tree_->levelwise_iterator();
     auto [level, i] = block_tree_->get_lowest_complete_level();
 
     for (int j = 0; j < c_block_tree_->number_of_levels_ - 1; ++j) {
-        level                 = iterator[i + j];
-        auto level_bt_offsets = *(c_block_tree_->offsets_[j]);
+        level        = iterator[i + j];
+        auto offsets = *(c_block_tree_->offsets_[j]);
 
         int max_size_level = level.front()->length();
         int l              = 0;
         for (Block *b : level) {
             if (dynamic_cast<BackBlock *>(b)) {
-                EXPECT_EQ(level_bt_offsets[l], max_size_level * b->first_block_->level_index_ + b->offset_);
+                EXPECT_EQ(offsets[l], max_size_level * b->first_block_->level_index_ + b->offset_);
                 ++l;
             }
         }
-        EXPECT_EQ(l, level_bt_offsets.size());
+        EXPECT_EQ(l, offsets.size());
     }
 }
 
 // This test checks if the CBlockTree has the same
 // structure that its correspondent BlockTree
-// in particular the bt_leaf_string field is checked
-TEST_P(CBlockTreeFixture, bt_leaf_string_field_check) {
-    auto        iterator    = block_tree_->levelwise_iterator();
-    std::string leaf_string = "";
+// in particular the leaf_string_ field is checked
+TEST_P(CBlockTreeFixture, leaf_string_check) {
+    auto        iterator = block_tree_->levelwise_iterator();
+    std::string leaf_string;
     for (Block *b : iterator.back()) {
         leaf_string += b->represented_string();
     }
 
-    std::string leaf_c_string = "";
+    std::string leaf_c_string;
     for (int i : (*c_block_tree_->leaf_string_)) {
         leaf_c_string += (char) (*c_block_tree_->alphabet_)[i];
     }
@@ -199,57 +211,54 @@ TEST_P(CBlockTreeFixture, bt_leaf_string_field_check) {
     EXPECT_EQ(leaf_c_string, leaf_string);
 }
 
-TEST_P(CBlockTreeFixture, prefix_suffix_symbols_field_check) {
+TEST_P(CBlockTreeFixture, prefix_suffix_symbols_check) {
     ASSERT_EQ(prefix_suffix_size_, c_block_tree_->prefix_suffix_size_) << "prefix_suffix_size_ field incorrect";
 }
 
 // This test checks if the CBlockTree has the same
 // structure that its correspondent BlockTree
-// in particular the bt_second_ranks field are checked
-TEST_P(CBlockTreeFixture, bt_second_ranks_field_check) {
+// in particular the first_block_pop_counts_ field are checked
+TEST_P(CBlockTreeFixture, first_block_pop_counts_check) {
     auto iterator   = block_tree_rs_->levelwise_iterator();
     auto [level, i] = block_tree_->get_lowest_complete_level();
 
     for (int j = 0; j < c_block_tree_->number_of_levels_ - 1; ++j) {
         level = iterator[i + j];
-        for (auto pair : characters_) {
-            int  c                     = pair.first;
-            auto level_bt_second_ranks = *(c_block_tree_rs_->first_block_pop_counts_[c][j]);
+        for (const auto &[c, _] : characters_) {
+            auto level_first_block_pop_counts = *(c_block_tree_rs_->first_block_pop_counts_[c][j]);
 
             int l = 0;
             for (Block *b : level) {
                 if (dynamic_cast<BackBlock *>(b)) {
-                    EXPECT_EQ(level_bt_second_ranks[l], b->pop_counts_in_first_block_[c]);
+                    EXPECT_EQ(level_first_block_pop_counts[l], b->pop_counts_in_first_block_[c]);
                     ++l;
                 }
             }
-            EXPECT_EQ(l, level_bt_second_ranks.size());
+            EXPECT_EQ(l, level_first_block_pop_counts.size());
         }
     }
 }
 
 // This test checks if the CBlockTree has the same
 // structure that its correspondent BlockTree
-// in particular the bt_ranks_ is checked
-TEST_P(CBlockTreeFixture, bt_bv_ranks_prefix_check) {
+// in particular the pop_counts_ is checked
+TEST_P(CBlockTreeFixture, pop_counts_check) {
     auto iterator   = block_tree_rs_->levelwise_iterator();
     auto [level, i] = block_tree_->get_lowest_complete_level();
 
-    for (auto pair : characters_) {
-        int c               = pair.first;
-        level               = iterator[i];
-        auto level_bt_ranks = *(c_block_tree_rs_->pop_counts_[c][0]);
-        EXPECT_EQ(level.size(), level_bt_ranks.size());
+    for (const auto &[c, _] : characters_) {
+        level                 = iterator[i];
+        auto level_pop_counts = *(c_block_tree_rs_->pop_counts_[c][0]);
+        EXPECT_EQ(level.size(), level_pop_counts.size());
 
         for (int k = 0; k < level.size(); ++k) {
             Block *b = level[k];
-            EXPECT_EQ(b->pop_counts_[c], level_bt_ranks[k]);
+            EXPECT_EQ(b->pop_counts_[c], level_pop_counts[k]);
         }
     }
 
     for (int j = 1; j < c_block_tree_->number_of_levels_; ++j) {
-        for (auto pair : characters_) {
-            int c               = pair.first;
+        for (const auto &[c, _] : characters_) {
             level               = iterator[i + j];
             auto level_bt_ranks = *(c_block_tree_rs_->pop_counts_[c][j]);
             EXPECT_EQ(level.size(), level_bt_ranks.size());
@@ -262,30 +271,27 @@ TEST_P(CBlockTreeFixture, bt_bv_ranks_prefix_check) {
     }
 }
 
-// This test checks if the CBlockTree has the same
-// structure that its correspondent BlockTree
-// in particular the first level for bt_prefix_ranks_,
-// is checked
-TEST_P(CBlockTreeFixture, bt_bv_first_level_prefix_ranks_check) {
+// This test checks if the CBlockTree has the same structure that its correspondent BlockTree in particular the first
+// level for first_level_ranks_, is checked
+TEST_P(CBlockTreeFixture, first_level_ranks_check) {
     auto iterator   = block_tree_rs_->levelwise_iterator();
     auto [level, i] = block_tree_->get_lowest_complete_level();
 
-    for (auto pair : characters_) {
-        int c                            = pair.first;
-        level                            = iterator[i];
-        auto first_level_bt_prefix_ranks = *(c_block_tree_rs_->first_level_ranks_[c]);
-        int  r                           = 0;
+    for (const auto &[c, _] : characters_) {
+        level                  = iterator[i];
+        auto first_level_ranks = *(c_block_tree_rs_->first_level_ranks_[c]);
+        int  r                 = 0;
 
-        EXPECT_EQ(first_level_bt_prefix_ranks.size(), level.size());
+        EXPECT_EQ(first_level_ranks.size(), level.size());
         for (int k = 0; k < level.size(); ++k) {
-            EXPECT_EQ(r, first_level_bt_prefix_ranks[k]);
+            EXPECT_EQ(r, first_level_ranks[k]);
             r += level[k]->pop_counts_[c];
         }
     }
 }
 
 // Check if the saved prefix/suffixes are correct
-TEST_P(CBlockTreeFixture, prefix_suffix_field_check) {
+TEST_P(CBlockTreeFixture, prefix_suffix_check) {
     const auto [_, lowest] = block_tree_->get_lowest_complete_level();
     auto  levels           = block_tree_rs_->levelwise_iterator();
     auto &alphabet         = *c_block_tree_->alphabet_;
@@ -338,7 +344,7 @@ TEST_P(CBlockTreeFixture, prefix_suffix_field_check) {
 }
 
 // This test checks if the mapping and alphabet fields are correct
-TEST_P(CBlockTreeFixture, bt_mapping_alphabet_field_check) {
+TEST_P(CBlockTreeFixture, mapping_alphabet_check) {
     EXPECT_EQ(c_block_tree_rs_->mapping_.size(), characters_.size());
     EXPECT_EQ(c_block_tree_rs_->alphabet_->size(), characters_.size());
     for (int i = 0; i < c_block_tree_->alphabet_->size(); ++i) {
@@ -346,14 +352,13 @@ TEST_P(CBlockTreeFixture, bt_mapping_alphabet_field_check) {
     }
 }
 
-// This test checks if the CBlockTree represents its input
-// string and if the access method is correct
-TEST_P(CBlockTreeFixture, input_integrity_or_access_check) {
+// This test checks if the CBlockTree represents its input string and if the access method is correct
+TEST_P(CBlockTreeFixture, access) {
     for (int i = 0; i < input_.size(); ++i) EXPECT_EQ(c_block_tree_->access(i), input_[i]);
 }
 
 /// Test substr method on substrings larger than the prefixes and suffixes stored in the blocks
-TEST_P(CBlockTreeFixture, substr_larger_check) {
+TEST_P(CBlockTreeFixture, substr_larger) {
     constexpr size_t size = 50;
     char             buf[size + 1];
 
@@ -367,7 +372,7 @@ TEST_P(CBlockTreeFixture, substr_larger_check) {
 }
 
 /// Test substr method on substrings smaller than the prefixes and suffixes stored in the blocks
-TEST_P(CBlockTreeFixture, substr_smaller_check) {
+TEST_P(CBlockTreeFixture, substr_smaller) {
     constexpr size_t size = 2;
     char             buf[size + 1];
 
@@ -380,11 +385,9 @@ TEST_P(CBlockTreeFixture, substr_smaller_check) {
     }
 }
 
-// This test checks the rank method for every character
-// and position in the input
-TEST_P(CBlockTreeFixture, ranks_check) {
-    for (auto pair : characters_) {
-        int c = pair.first;
+// This test checks the rank method for every character and position in the input
+TEST_P(CBlockTreeFixture, rank) {
+    for (const auto &[c, _] : characters_) {
         int r = 0;
         for (int i = 0; i < input_.size(); ++i) {
             if (input_[i] == c)
@@ -394,11 +397,10 @@ TEST_P(CBlockTreeFixture, ranks_check) {
     }
 }
 
-// This test checks the select method for every character
-// and rank
-TEST_P(CBlockTreeFixture, selects_check) {
-    for (auto pair : characters_) {
-        int c = pair.first;
-        for (int j = 1; j <= pair.second.size(); ++j) EXPECT_EQ(c_block_tree_rs_->select(c, j), pair.second[j - 1]);
+// This test checks the select method for every character and rank
+TEST_P(CBlockTreeFixture, select) {
+    for (const auto &[c, char_select_results] : characters_) {
+        for (int j = 1; j <= char_select_results.size(); ++j)
+            EXPECT_EQ(c_block_tree_rs_->select(c, j), char_select_results[j - 1]);
     }
 }
