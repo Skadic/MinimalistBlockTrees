@@ -14,9 +14,9 @@ class CBlockTree {
     int arity_;
     /// The root block's arity.
     int root_arity_;
-    /// The block size of the blocks in the lowest complete level of this tree.
-    int lowest_complete_level_block_size_;
-    /// The number of levels in this tree starting at the lowest complete.
+    /// The block size of the blocks in the first level of this tree.
+    int first_level_block_size_;
+    /// The number of levels in this tree.
     int number_of_levels_;
     /// Whether this tree is built with rank select support.
     bool rank_select_support_;
@@ -60,9 +60,10 @@ class CBlockTree {
     /// Maps a character to an integer code number
     std::unordered_map<char, int> mapping_;
 
-    /// For the lowest complete level (i.e. with no blocks missing) of the tree, saves the ranks up to (and not
-    /// including) a specific block for each character This maps character -> block index -> rank
-    std::unordered_map<int, sdsl::int_vector<> *> lowest_complete_level_ranks_;
+    /// For the first level (corresponds to the first level in the original tree with no missing blocks) of the tree,
+    /// saves the ranks up to (and not including) a specific block for each character.
+    /// This maps character -> block index -> rank
+    std::unordered_map<int, sdsl::int_vector<> *> first_level_ranks_;
 
     /// This stores the number of times a character appears inside of each of the tree's blocks.
     /// This maps character -> level -> block index -> pop count
