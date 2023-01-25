@@ -161,8 +161,10 @@ void fill_fast_substring_data(CBlockTree *cbt, const Level &level) {
         // In this case the prefix and suffix are equal
         if (level_block_size <= cbt->prefix_suffix_size_) {
             for (size_t i = 0; i < saved_data_per_block; ++i) {
-                const auto mapped_char                          = cbt->mapping_[prefix[i]];
-                symbols[block_index * saved_data_per_block + i] = mapped_char;
+                // Get the char from the prefix. If a char does not exist there, fill up the rest with garbage
+                // This can only happen for the last block of a level so the space consumed by this is insignificant
+                const auto prefix_char                          = i < prefix.size() ? prefix[i] : prefix[0];
+                symbols[block_index * saved_data_per_block + i] = cbt->mapping_.at(prefix_char);
             }
             continue;
         }
@@ -175,7 +177,7 @@ void fill_fast_substring_data(CBlockTree *cbt, const Level &level) {
             // Get the char from the suffix. If a char does not exist there, fill up the rest with garbage
             // This can only happen for the last block of a level so the space consumed by this is insignificant
             const auto suffix_char                                          = i < suffix.size() ? suffix[i] : prefix[0];
-            symbols[block_index * saved_data_per_block + prefix.size() + i] = cbt->mapping_[suffix_char];
+            symbols[block_index * saved_data_per_block + prefix.size() + i] = cbt->mapping_.at(suffix_char);
         }
     }
     sdsl::util::bit_compress(symbols);
