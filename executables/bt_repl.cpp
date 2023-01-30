@@ -62,9 +62,6 @@ int main(int argc, char **argv) {
     auto bt = std::unique_ptr<BlockTree>(new BlockTree(input, arity, root_arity, leaf_length, true, true));
     auto cbt = std::unique_ptr<CBlockTree>(new CBlockTree(&*bt));
 
-    uint64_t n = input.length();
-
-
     while (true) {
       std::cout << "> ";
       size_t i;

@@ -20,15 +20,14 @@ int main(int argc, char **argv) {
     }
 
     std::ifstream ifs(argv[1]);
-    uint64_t len;
-    ifs.read((char*) &len, sizeof(uint64_t));
     auto* cbt = new CBlockTree(ifs);
 
     std::ofstream ofs(std::string(argv[1]) + ".dec");
-    for (size_t i = 0; i < len; i++) {
-      ofs << (char) cbt->access(i);
-    }
+    auto buf = new char[cbt->input_size_];
+    cbt->substr(buf, 0, cbt->input_size_);
+    ofs << buf;
     
+    delete[] buf;
     delete cbt;
     return 0;
 }
