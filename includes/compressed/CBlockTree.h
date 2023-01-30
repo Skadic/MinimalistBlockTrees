@@ -7,6 +7,7 @@
 #include <sdsl/vectors.hpp>
 
 #include <unordered_map>
+#include <unordered_set>
 
 class CBlockTree {
   public:
@@ -21,7 +22,10 @@ class CBlockTree {
     /// Whether this tree is built with rank select support.
     bool rank_select_support_;
     /// The number of characters in the input string;
-    size_t input_size;
+    size_t input_size_;
+    /// The size of the prefixes and suffixes of a block's represented string. This is saved for every block larger than
+    /// this value, allowing fast substring queries.
+    size_t prefix_suffix_size_;
 
     /// For each level l, stores a bitvector B,
     /// where B[j] == 1 if the block at index j on level l is an internal block
@@ -45,10 +49,6 @@ class CBlockTree {
     /// The string represented by the lowest level of this tree.
     /// This is transformed by the `mapping_`
     sdsl::int_vector<> *leaf_string_;
-
-    /// The size of the prefixes and suffixes of a block's represented string. This is saved for every block larger than
-    /// this value, allowing fast substring queries.
-    uint32_t prefix_suffix_size_;
 
     /// Contains the first and last prefix_suffix_size_ symbols of each node of each level.
     /// One int_vector contains the first prefix_suffix_size_ symbols of node 0,

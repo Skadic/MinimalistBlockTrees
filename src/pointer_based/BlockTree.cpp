@@ -24,6 +24,7 @@ BlockTree::BlockTree(const std::string &input,
     root_arity_(root_block_arity),
     input_(input),
     leaf_length_(leaf_length),
+    rank_select_support_(rs_support),
     prefix_suffix_size_(0) {
 
     // If a leaf is supposed to be greater than the text, or if the arity is greater than the text is long, just make

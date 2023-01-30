@@ -53,6 +53,8 @@ class BlockTree {
     /// The size of the prefixes and suffixes of a block's represented string. This is saved for every block larger than
     /// this value, allowing fast substring queries.
     int prefix_suffix_size_{};
+    /// Whether this tree is built with rank select support.
+    bool rank_select_support_;
     /// Input sequence of the Tree
     const std::string input_;
     /// The root block

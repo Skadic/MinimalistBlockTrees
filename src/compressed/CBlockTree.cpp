@@ -1,6 +1,5 @@
 #include <compressed/CBlockTree.h>
 #include <pointer_based/BlockTree.h>
-#include <ranges>
 #include <unordered_set>
 #include <vector>
 
@@ -147,9 +146,9 @@ std::pair<Offsets *, PopCounts> offsets_and_first_block_pop_counts(const Level  
 }
 
 void fill_fast_substring_data(CBlockTree *cbt, const Level &level) {
-    const size_t   level_size           = level.size();
-    const uint32_t level_block_size     = level[0]->length();
-    const size_t   saved_data_per_block = std::min(level_block_size, 2 * cbt->prefix_suffix_size_);
+    const size_t level_size           = level.size();
+    const size_t level_block_size     = level[0]->length();
+    const size_t saved_data_per_block = std::min(level_block_size, 2 * cbt->prefix_suffix_size_);
     cbt->prefix_suffix_symbols_.push_back(new sdsl::int_vector<>(level_size * saved_data_per_block, 0));
     auto &symbols = *cbt->prefix_suffix_symbols_.back();
     for (int block_index = 0; block_index < level_size; block_index++) {
@@ -162,7 +161,7 @@ void fill_fast_substring_data(CBlockTree *cbt, const Level &level) {
             for (size_t i = 0; i < saved_data_per_block; ++i) {
                 // Get the char from the prefix. If a char does not exist there, fill up the rest with garbage
                 // This can only happen for the last block of a level so the space consumed by this is insignificant
-                const auto prefix_char                          = i < prefix.size() ? prefix[i] : prefix[0];
+                const auto prefix_char                          = i < prefix.size() && block->start_index_ + i < cbt->input_size_ ? prefix[i] : prefix[0];
                 symbols[block_index * saved_data_per_block + i] = cbt->mapping_.at(prefix_char);
             }
             continue;
@@ -188,7 +187,8 @@ CBlockTree::CBlockTree(BlockTree *bt) :
     arity_(bt->arity_),
     root_arity_(bt->root_arity_),
     prefix_suffix_size_(bt->prefix_suffix_size_),
-    input_size(bt->input_.size()) {
+    input_size_(bt->input_.size()),
+    rank_select_support_(bt->rank_select_support_){
     using namespace cbt_util;
 
     // Get the lowest level in the block tree that has no "gaps"
@@ -298,10 +298,12 @@ CBlockTree::CBlockTree(std::istream &in) {
     in.read((char *) &first_level_block_size_, sizeof(int));
     in.read((char *) &number_of_levels_, sizeof(int));
     in.read((char *) &rank_select_support_, sizeof(bool));
+    in.read((char *) &input_size_, sizeof(size_t));
+    in.read((char *) &prefix_suffix_size_, sizeof(size_t));
 
     for (int i = 0; i < number_of_levels_ - 1; ++i) {
         is_internal_.push_back(new sdsl::bit_vector());
-        (*is_internal_[i]).load(in);
+        is_internal_[i]->load(in);
     }
 
     for (sdsl::bit_vector *bv : is_internal_) {
@@ -310,37 +312,44 @@ CBlockTree::CBlockTree(std::istream &in) {
 
     for (int i = 0; i < number_of_levels_ - 1; ++i) {
         offsets_.push_back(new sdsl::int_vector<>());
-        (*offsets_[i]).load(in);
+        offsets_[i]->load(in);
     }
 
     leaf_string_ = new sdsl::int_vector<>();
-    (*leaf_string_).load(in);
+    leaf_string_->load(in);
 
     alphabet_ = new sdsl::int_vector<>();
-    (*alphabet_).load(in);
+    alphabet_->load(in);
 
     int c = 0;
     for (int character : (*alphabet_)) {
         mapping_[character] = c++;
     }
 
+    if (prefix_suffix_size_ > 0) {
+        for (int i = 0; i < number_of_levels_ - 1; ++i) {
+            prefix_suffix_symbols_.push_back(new sdsl::int_vector<>());
+            prefix_suffix_symbols_[i]->load(in);
+        }
+    }
+
     if (rank_select_support_) {
-        for (int character : (*alphabet_)) {
+        for (int character : *alphabet_) {
             first_level_ranks_[character] = new sdsl::int_vector<>();
-            (*first_level_ranks_[character]).load(in);
+            first_level_ranks_[character]->load(in);
         }
 
-        for (int character : (*alphabet_)) {
+        for (int character : *alphabet_) {
             for (int i = 0; i < number_of_levels_; ++i) {
                 pop_counts_[character].push_back(new sdsl::int_vector<>());
-                (*pop_counts_[character][i]).load(in);
+                pop_counts_[character][i]->load(in);
             }
         }
 
-        for (int character : (*alphabet_)) {
+        for (int character : *alphabet_) {
             for (int i = 0; i < number_of_levels_ - 1; ++i) {
                 first_block_pop_counts_[character].push_back(new sdsl::int_vector<>());
-                (*first_block_pop_counts_[character][i]).load(in);
+                first_block_pop_counts_[character][i]->load(in);
             }
         }
     }
@@ -367,21 +376,19 @@ CBlockTree::~CBlockTree() {
     delete leaf_string_;
     delete alphabet_;
 
-    if (rank_select_support_) {
-        for (auto pair : first_level_ranks_) {
-            delete pair.second;
-        }
+    for (auto pair : first_level_ranks_) {
+        delete pair.second;
+    }
 
-        for (const auto &pair : pop_counts_) {
-            for (sdsl::int_vector<> *ranks : pair.second) {
-                delete ranks;
-            }
+    for (const auto &pair : pop_counts_) {
+        for (sdsl::int_vector<> *ranks : pair.second) {
+            delete ranks;
         }
+    }
 
-        for (const auto &pair : first_block_pop_counts_) {
-            for (sdsl::int_vector<> *ranks : pair.second) {
-                delete ranks;
-            }
+    for (const auto &pair : first_block_pop_counts_) {
+        for (sdsl::int_vector<> *ranks : pair.second) {
+            delete ranks;
         }
     }
 }
@@ -457,7 +464,7 @@ char *CBlockTree::substr_internal(char *buf, size_t index, size_t len) const {
             index -= current_length - prefix_suffix_size_;
             // If this block is smaller than the prefix_suffix_size then the suffix (= prefix) has no offset
             // Otherwise it is saved after prefix
-            const volatile size_t suffix_offset = saved_data_per_block - prefix_suffix_size_;
+            const volatile size_t suffix_offset      = saved_data_per_block - prefix_suffix_size_;
             const volatile size_t substr_start_index = current_block * saved_data_per_block + suffix_offset + index;
             // Read the string from this block's suffix and the next block's prefix
             // Since they are contiguous in memory, read them in one go
@@ -644,8 +651,6 @@ int CBlockTree::select(int c, int k) const {
         if (!k)
             return s + j - current_block * current_length;
     }
-
-    return -1;
 }
 
 int CBlockTree::get_partial_size() const {
@@ -717,33 +722,41 @@ void CBlockTree::serialize(std::ostream &out) const {
     out.write((char *) &first_level_block_size_, sizeof(int));
     out.write((char *) &number_of_levels_, sizeof(int));
     out.write((char *) &rank_select_support_, sizeof(bool));
+    out.write((char *) &input_size_, sizeof(size_t));
+    out.write((char *) &prefix_suffix_size_, sizeof(size_t));
 
     for (sdsl::bit_vector *bv : is_internal_) {
-        (*bv).serialize(out);
+        bv->serialize(out);
     }
 
     for (sdsl::int_vector<> *offsets : offsets_) {
-        (*offsets).serialize(out);
+        offsets->serialize(out);
     }
 
-    (*leaf_string_).serialize(out);
+    leaf_string_->serialize(out);
 
-    (*alphabet_).serialize(out);
+    alphabet_->serialize(out);
+
+    if (prefix_suffix_size_ > 0) {
+        for (sdsl::int_vector<> *symbols : prefix_suffix_symbols_) {
+            symbols->serialize(out);
+        }
+    }
 
     if (rank_select_support_) {
-        for (int character : (*alphabet_)) {
-            (*first_level_ranks_.at(character)).serialize(out);
+        for (int character : *alphabet_) {
+            first_level_ranks_.at(character)->serialize(out);
         }
 
-        for (int character : (*alphabet_)) {
-            for (sdsl::int_vector<> *ranks : pop_counts_.at(character)) {
-                (*ranks).serialize(out);
+        for (int character : *alphabet_) {
+            for (sdsl::int_vector<> *pop_counts : pop_counts_.at(character)) {
+                pop_counts->serialize(out);
             }
         }
 
-        for (int character : (*alphabet_)) {
-            for (sdsl::int_vector<> *second_ranks : first_block_pop_counts_.at(character)) {
-                (*second_ranks).serialize(out);
+        for (int character : *alphabet_) {
+            for (sdsl::int_vector<> *pop_counts : first_block_pop_counts_.at(character)) {
+                pop_counts->serialize(out);
             }
         }
     }
