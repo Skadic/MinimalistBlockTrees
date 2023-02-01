@@ -69,7 +69,7 @@ class CBlockTree {
     /// This maps character -> level -> block index -> pop count
     std::unordered_map<int, std::vector<sdsl::int_vector<> *>> pop_counts_;
 
-    /// This is specific to non-internal nodes and stores the number of times a character appears in the part of this
+    /// This is specific to back blocks and stores the number of times a character appears in the part of this
     /// block's source which is contained in the first block it spans.
     /// For example:
     /// ABAA|CADC|AACA|BACA
@@ -116,8 +116,14 @@ class CBlockTree {
     /// @param character A character to search for.
     /// @param rank The desired rank of the character.
     /// @return An index i, such that `access(i) == c` and `rank(c, i) == rank`.
+    ///
     [[nodiscard]] int select(int character, int rank) const;
 
+    ///
+    /// @brief Gets the approximate in-ram size of this data structure in RAM.
+    ///
+    /// @return The size in bytes.
+    ///
     [[nodiscard]] int size() const;
     [[nodiscard]] int get_partial_size() const;
     void              serialize(std::ostream &character) const;
