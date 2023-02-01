@@ -1,5 +1,4 @@
 set(project_EXECUTABLES
-        main
         build_bt
         read_bt
         bt_repl)
