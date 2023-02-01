@@ -5,6 +5,11 @@ implementation for the BlockTree data structure described [here](https://ieeexpl
 Details of the implementation follow the experimental studies
 conducted in Reyes' MSc. thesis available [here](https://users.dcc.uchile.cl/~gnavarro/mem/algoritmos/tesisManuel.pdf).
 
+This fork is a refactor of the original code, with more documentation,
+altered variable/function naming and support for faster substring queries
+on uncompressed and compressed block trees.
+The bitmap-optimized block tree does not support substring queries at this point.
+
 ## Installation Guide
 
 First clone the repo:
@@ -32,7 +37,9 @@ this adds the necessary libraries for you:
 ```cpp
 set(project_EXECUTABLES
         <new_executable>
-        main)
+        build_bt
+        read_bt
+        bt_repl)
 ...
 ```
 
@@ -88,21 +95,23 @@ if you want to have a more compact representation
 ...
 CBlockTree *cbt = new CBlockTree(bt); // Builds a more compact BlockTree representation
 cbt->access(i);
-cbt->select(c,i);
-cbt->size(); // It obtains the size (in bytes) of this compact representation
-cbt->serialize(out); // It serializes it components to an output stream
+cbt->select(c, i); // Rank/Select equires the source block tree to support rank/select!
+cbt->size(); // Obtains the approximate size (in bytes)
+cbt->serialize(out); // Serializes the tree to an output stream
 ...
-CBlockTree *loaded_cbt = new CBlockTree(in); // It loads a CBlockTree from an input stream
+CBlockTree *loaded_cbt = new CBlockTree(in); // Loads a CBlockTree from an input stream
 ...
 ```
 
-If your input is a bitmap
-you can build an (even) more compact representation specialized for bitmaps:
+If you'd like to build a bitmap over your input (or your input has a binary alphabet)
+you can build an (even) more compact representation specialized for bitmaps.
+Just supply it with a block tree, and the input symbol that should be considered to be a one.
 
 ```cpp
 ...
-CBitBlockTree *cbbt = new CBitBlockTree(bt, '('); // It assumes that the BlockTree represents a bitmap whose "1"
-                                                  //is the second argument of the contruction, the rest are "0"s
+// E.g. for a balanced parantheses sequence, the opening parenthesis is considered to be a 1 here
+CBitBlockTree *cbbt = new CBitBlockTree(bt, '(');
+
 cbbt->access(i);
 cbbt->rank_1(i);
 cbbt->select_0(i);
