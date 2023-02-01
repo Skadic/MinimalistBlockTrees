@@ -316,6 +316,9 @@ CBlockTree::CBlockTree(BlockTree *bt) :
         Level level = lowest_complete_level;
         while (!level.empty()) {
             fill_fast_substring_data(this, level);
+            if (level[0]->length() <= 2 * prefix_suffix_size_) {
+                break;
+            }
             level = bt->next_level(level);
         }
     }
@@ -462,8 +465,9 @@ char *CBlockTree::substr_internal(char *buf, size_t idx, size_t len) const {
         current_length <= 2 * prefix_suffix_size_ ? current_length : 2 * current_prefix_suffix_size;
 
     while (level < number_of_levels_ - 1) {
+
         // If the substring is part of this block's prefix, we can just read it from there
-        if (index + len <= current_prefix_suffix_size) {
+        if (index + len <= current_prefix_suffix_size || current_length <= 2 * prefix_suffix_size_) {
             // The start index of the substring inside the saves prefix/suffix vector of this level
             const size_t substr_start_index_ = current_block * saved_data_per_block + index;
             for (size_t i = 0; i < len; ++i) {
