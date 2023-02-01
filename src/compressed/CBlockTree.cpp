@@ -145,10 +145,18 @@ std::pair<Offsets *, PopCounts> offsets_and_first_block_pop_counts(const Level  
     return {offsets, first_block_pop_counts};
 }
 
+///
+/// @brief Fill a level of the the block tree with data used for fast substring queries.
+/// This saves the first and last few characters in each block to facilitate substring queries.
+///
+/// @param cbt The compressed block tree that's under construction
+/// @param level The level to process
+///
 void fill_fast_substring_data(CBlockTree *cbt, const Level &level) {
     const size_t level_size           = level.size();
     const size_t level_block_size     = level[0]->length();
     const size_t saved_data_per_block = std::min(level_block_size, 2 * cbt->prefix_suffix_size_);
+    // Create a new int vector to hold this level's symbols
     cbt->prefix_suffix_symbols_.push_back(new sdsl::int_vector<>(level_size * saved_data_per_block, 0));
     auto &symbols = *cbt->prefix_suffix_symbols_.back();
     for (int block_index = 0; block_index < level_size; block_index++) {
@@ -161,8 +169,31 @@ void fill_fast_substring_data(CBlockTree *cbt, const Level &level) {
             for (size_t i = 0; i < saved_data_per_block; ++i) {
                 // Get the char from the prefix. If a char does not exist there, fill up the rest with garbage
                 // This can only happen for the last block of a level so the space consumed by this is insignificant
-                const auto prefix_char                          = i < prefix.size() && block->start_index_ + i < cbt->input_size_ ? prefix[i] : prefix[0];
+                const auto prefix_char =
+                    i < prefix.size() && block->start_index_ + i < cbt->input_size_ ? prefix[i] : prefix[0];
                 symbols[block_index * saved_data_per_block + i] = cbt->mapping_.at(prefix_char);
+            }
+            continue;
+        }
+
+        // In this case, prefix and suffix overlap
+        if (level_block_size < 2 * cbt->prefix_suffix_size_) {
+            const size_t overlap = prefix.size() + suffix.size() - saved_data_per_block;
+            for (size_t i = 0; i < saved_data_per_block; ++i) {
+                // Read characters from the prefix until there are none left
+                if (i < prefix.size()) {
+                    const char prefix_char =
+                        i < prefix.size() && block->start_index_ + i < cbt->input_size_ ? prefix[i] : prefix[0];
+                    symbols[block_index * saved_data_per_block + i] = cbt->mapping_.at(prefix_char);
+                } else {
+                    // From that point on, start reading from the suffix, skipping the characters that overlap
+                    const size_t index_in_suffix = i - prefix.size() + overlap;
+                    const char   suffix_char =
+                        index_in_suffix < suffix.size() && block->start_index_ + i < cbt->input_size_
+                              ? suffix[index_in_suffix]
+                              : prefix[0];
+                    symbols[block_index * saved_data_per_block + i] = cbt->mapping_.at(suffix_char);
+                }
             }
             continue;
         }
@@ -188,7 +219,7 @@ CBlockTree::CBlockTree(BlockTree *bt) :
     root_arity_(bt->root_arity_),
     prefix_suffix_size_(bt->prefix_suffix_size_),
     input_size_(bt->input_.size()),
-    rank_select_support_(bt->rank_select_support_){
+    rank_select_support_(bt->rank_select_support_) {
     using namespace cbt_util;
 
     // Get the lowest level in the block tree that has no "gaps"
@@ -419,7 +450,8 @@ int CBlockTree::access(int i) const {
     return (*alphabet_)[(*leaf_string_)[i + current_block * current_length]];
 }
 
-char *CBlockTree::substr_internal(char *buf, size_t index, size_t len) const {
+char *CBlockTree::substr_internal(char *buf, size_t idx, size_t len) const {
+    size_t index          = idx;
     size_t current_block  = index / first_level_block_size_;
     size_t current_length = first_level_block_size_;
     // Make the index local to the block we are in
@@ -427,11 +459,11 @@ char *CBlockTree::substr_internal(char *buf, size_t index, size_t len) const {
     size_t level                      = 0;
     size_t current_prefix_suffix_size = std::min(current_length, (size_t) prefix_suffix_size_);
     size_t saved_data_per_block =
-        current_length <= prefix_suffix_size_ ? current_length : 2 * current_prefix_suffix_size;
+        current_length <= 2 * prefix_suffix_size_ ? current_length : 2 * current_prefix_suffix_size;
 
     while (level < number_of_levels_ - 1) {
         // If the substring is part of this block's prefix, we can just read it from there
-        if (index + len <= prefix_suffix_size_) {
+        if (index + len <= current_prefix_suffix_size) {
             // The start index of the substring inside the saves prefix/suffix vector of this level
             const size_t substr_start_index_ = current_block * saved_data_per_block + index;
             for (size_t i = 0; i < len; ++i) {
@@ -492,7 +524,7 @@ char *CBlockTree::substr_internal(char *buf, size_t index, size_t len) const {
 
             current_prefix_suffix_size = std::min(current_length, current_prefix_suffix_size);
             saved_data_per_block =
-                current_length <= prefix_suffix_size_ ? current_length : 2 * current_prefix_suffix_size;
+                current_length <= 2 * prefix_suffix_size_ ? current_length : 2 * current_prefix_suffix_size;
             level++;
             continue;
         } else { // Case Back Block
