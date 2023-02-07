@@ -15,7 +15,7 @@ The bitmap-optimized block tree does not support substring queries at this point
 First clone the repo:
 
 ```bash
- git clone https://github.com/elarielcl/MinimalistBlockTrees.git
+git clone https://github.com/elarielcl/MinimalistBlockTrees.git
 ```
 
 This project is a CMake project.
@@ -34,13 +34,12 @@ You can add an executable by writing your file in the `executables` directory
 and add its name to the `executables/CMakeLists.txt` file,
 this adds the necessary libraries for you:
 
-```cpp
+```cmake
 set(project_EXECUTABLES
         <new_executable>
         build_bt
         read_bt
         bt_repl)
-...
 ```
 
 ### Commitlint
@@ -51,12 +50,30 @@ To use the commitlint config, make sure to run
 npm i
 ```
 
-## Usage Example
+## Executables
+
+This repository offers three executables to build, inspect or decompress block tree files.
+
+`build_bt` takes an input file and some options and creates a compressed block tree file, with the block tree metadata and a `.bt` file ending added to the file name.
+For example:
+
+```sh
+./build_bt "my_file.txt" 2 128 2 16
+```
+
+This builds a block tree file called `my_file.txt_arit2_root128_leaf2_ps16.bt`.
+It will have an arity of 2, a root arity of `128` (potentially), a maximum leaf length of `2` and saving the first and last `16` characters of each block's represented string.
+
+
+`read_bt` takes a block tree file as its input and decompresses it. The file name will have a `.dec` added to its name.
+
+`bt_repl` takes a block tree file as its input and offers a REPL-like interface to extract data from it.
+
+## Usage Library
 
 Let's suppose we want to build a BlockTree, so we do:
 
 ```cpp
-...
 std::string input = "AACCCTGCTGCTGATCGGATCGTAGC";
 int arity = 2; // The arity of the BlockTree
 int root_arity = 8; // The arity of the BlockTree's root block
@@ -67,7 +84,6 @@ bool rs_support = false; // Whether to build the BlockTree with rank/select supp
 BlockTree* bt = new BlockTree(input, arity, root_arity, leaf_len, process, rs_support); // This creates the BlockTree object, a pointer-based implementation
 bt->process_back_pointers(); // This method constructs the BackPointers in the BlockTree. Unncessary if process == true
 bt->clean_unnecessary_expansions(); // This method removes the expansion of InternalBlocks that are unnecesary (this is also called pruning). Unncessary if process == true
- ...
 ```
 
 In case you want to build the a more compact version
@@ -77,7 +93,7 @@ but without theoretical guarantee, you can replace the last two lines with
 bt->process_back_pointers_heuristic();
 ```
 
-.. now you have a proper BlockTree answering access queries(`bt->access(i)`),
+.. now you have a proper (but still uncompressed) BlockTree answering access queries(`bt->access(i)`),
 if you want to give it `bt->rank(c,i) & bt->select(c,j)` support you should do:
 
 ```cpp
@@ -87,20 +103,18 @@ for (int c: characters)
 
 This is only necessary if `rs_support` was set to `false` before.
 
-The above is a pointer-based implementation of BlockTrees,
-if you want to have a more compact representation
+The above is a pointer-based, uncompressed implementation of BlockTrees,
+if you want to have a compact representation
 (using bitvectors to represent the tree) you should do:
 
 ```cpp
-...
 CBlockTree *cbt = new CBlockTree(bt); // Builds a more compact BlockTree representation
 cbt->access(i);
 cbt->select(c, i); // Rank/Select equires the source block tree to support rank/select!
 cbt->size(); // Obtains the approximate size (in bytes)
 cbt->serialize(out); // Serializes the tree to an output stream
-...
-CBlockTree *loaded_cbt = new CBlockTree(in); // Loads a CBlockTree from an input stream
-...
+
+CBlockTree *loaded_cbt = new CBlockTree(in); // Reads a CBlockTree from an input stream
 ```
 
 If you'd like to build a bitmap over your input (or your input has a binary alphabet)
@@ -108,24 +122,19 @@ you can build an (even) more compact representation specialized for bitmaps.
 Just supply it with a block tree, and the input symbol that should be considered to be a one.
 
 ```cpp
-...
 // E.g. for a balanced parantheses sequence, the opening parenthesis is considered to be a 1 here
 CBitBlockTree *cbbt = new CBitBlockTree(bt, '(');
 
 cbbt->access(i);
 cbbt->rank_1(i);
 cbbt->select_0(i);
-...
-...
 ```
 
 ... and never forget to delete your trash ;)
 
 ```cpp
-...
 delete bt;
 delete cbt;
 delete loaded_cbt;
 delete cbbt;
-...
 ```
