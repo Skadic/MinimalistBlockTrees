@@ -15,7 +15,7 @@ The bitmap-optimized block tree does not support substring queries at this point
 First clone the repo:
 
 ```bash
-git clone https://github.com/elarielcl/MinimalistBlockTrees.git
+git clone https://github.com/Skadic/MinimalistBlockTrees.git
 ```
 
 This project is a CMake project.
