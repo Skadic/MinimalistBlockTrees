@@ -211,7 +211,7 @@ TEST_P(CBlockTreeFixture, leaf_string_check) {
     EXPECT_EQ(leaf_c_string, leaf_string);
 }
 
-TEST_P(CBlockTreeFixture, prefix_suffix_symbols_check) {
+TEST_P(CBlockTreeFixture, prefix_suffix_size_check) {
     ASSERT_EQ(prefix_suffix_size_, c_block_tree_->prefix_suffix_size_) << "prefix_suffix_size_ field incorrect";
 }
 
@@ -339,6 +339,11 @@ TEST_P(CBlockTreeFixture, prefix_suffix_check) {
                 ASSERT_EQ(suffix, std::string_view(suffix_buf, suffix.size()))
                     << "Incorrect suffix in block (" << block->start_index_ << ", " << block->end_index_ << ")";
             }
+        }
+
+        // After a level that satisifies this, no further prefixes and suffixes are saved beyond this
+        if (block_size <= 2 * prefix_suffix_size_) {
+            break;
         }
     }
 }
