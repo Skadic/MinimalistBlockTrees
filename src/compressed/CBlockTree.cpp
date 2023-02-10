@@ -555,6 +555,14 @@ char *CBlockTree::substr_internal(char *buf, size_t idx, size_t len) const {
 }
 
 char *CBlockTree::substr(char *buf, const size_t index, const size_t len) const {
+    // If we haven't saved prefixes and suffixes, we need to fall back on access queries
+    if (prefix_suffix_size_ == 0) {
+        for (size_t i = index; i < std::min(index + len, this->input_size_); i++) {
+            *buf++ = access(i);
+        }
+        return buf;
+    }
+
     // This is the length of the prefix/suffix saved for each block
     const size_t current_prefix_suffix_size =
         first_level_block_size_ < prefix_suffix_size_ ? first_level_block_size_ : prefix_suffix_size_;
