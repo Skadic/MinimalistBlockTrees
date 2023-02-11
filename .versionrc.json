@@ -11,6 +11,6 @@
     { "type": "perf", "hidden": true },
     { "type": "test", "hidden": true }
   ],
-  "commitUrlFormat": "https://github.com/mokkapps/changelog-generator-demo/commits/{{hash}}",
-  "compareUrlFormat": "https://github.com/mokkapps/changelog-generator-demo/compare/{{previousTag}}...{{currentTag}}"
+  "commitUrlFormat": "https://github.com/Skadic/MinimalistBlockTrees/commit/{{hash}}",
+  "compareUrlFormat": "https://github.com/Skadic/MinimalistBlockTrees/compare/{{previousTag}}...{{currentTag}}"
 }
